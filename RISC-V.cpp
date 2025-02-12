@@ -77,7 +77,7 @@ void LoadWord()
 int main(int argc, char* argv[]) {
     int ProgramSize = 0;
 
-    if (argc4) {
+    if (argc==4) {
         MemoryFile = argv[1];
         StartAddress = std::stoi(argv[2]);
         StackAddress = std::stoi(argv[3]);
