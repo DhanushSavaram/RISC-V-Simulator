@@ -163,84 +163,84 @@ int main(int argc, char* argv[]) {
 
         pc += 4;
 
-        // imm = CI >> 20;
-        // opcode = CI & 0x7f;
-        // std::cout << "Current Opcode: " << opcode << std::endl;
+        imm = CI >> 20;
+        opcode = CI & 0x7f;
+        std::cout << "Current Opcode: " << opcode << std::endl;
 
-        // rd = (CI >> 7) & 0x1f;
-        // funct3 = (CI >> 12) & 0x7;
-        // std::cout << "Current Funct3: " << funct3 << std::endl;
-        // rs1 = (CI >> 15) & 0x1f;
+        rd = (CI >> 7) & 0x1f;
+        funct3 = (CI >> 12) & 0x7;
+        std::cout << "Current Funct3: " << funct3 << std::endl;
+        rs1 = (CI >> 15) & 0x1f;
 
-        // switch (opcode) {
-        //     case 0x13:
-        //         if (funct3 == 0x0) {
-        //             std::cout << "Add Immediate detected" << std::endl;
-        //             x[rd] = x[rs1] + imm;
-        //             std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
-        //         }
-        //         break;
+        switch (opcode) {
+            case 0x13:
+                if (funct3 == 0x0) {
+                    std::cout << "Add Immediate detected" << std::endl;
+                    x[rd] = x[rs1] + imm;
+                    std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
+                }
+                break;
 
-        //     case 0x3:
-        //         if (funct3 == 0x2) {
-        //             std::cout << "Load word instruction detected" << std::endl;
-        //             x[rd] = MemorySpace[x[rs1]] | (MemorySpace[x[rs1] + 1] << 8) | (MemorySpace[x[rs1] + 2] << 16) | (MemorySpace[x[rs1] + 3] << 24);
-        //             std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
-        //         }
-        //         else if (funct3 == 0x0) {
-        //             std::cout << "Load byte instruction detected" << std::endl;
-        //             if (MemorySpace[x[rs1]]<<7 ) {
-        //                 x[rd] = MemorySpace[x[rs1]] | 0xFFFFFF00;
-        //             } else {
-        //                 x[rd] = MemorySpace[x[rs1]];
-        //             }
-        //             std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
-        //         }
-        //         else if (funct3 == 0x1) {
-        //             std::cout << "Load half word instruction detected" << std::endl;
-        //             if (MemorySpace[x[rs1] + 1] <<7) {
-        //                 x[rd] = (MemorySpace[x[rs1] + 1] << 8) | MemorySpace[x[rs1]] | 0xFFFF0000;
-        //             } else {
-        //                 x[rd] = (MemorySpace[x[rs1] + 1] << 8) | MemorySpace[x[rs1]];
-        //             }
-        //             std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
-        //         }
-        //         else if (funct3 == 0x4) {
-        //             std::cout << "Load half word unsigned instruction detected" << std::endl;
-        //             x[rd] = (MemorySpace[x[rs1] + 1] << 8) | MemorySpace[x[rs1]];
-        //             std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
-        //         }
-        //         else if (funct3 == 0x5) {
-        //             std::cout << "Load byte unsigned instruction detected" << std::endl;
-        //             x[rd] = MemorySpace[x[rs1]];
-        //             std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
-        //         }
-        //         break;
+            case 0x3:
+                if (funct3 == 0x2) {
+                    std::cout << "Load word instruction detected" << std::endl;
+                    x[rd] = MemorySpace[x[rs1]] | (MemorySpace[x[rs1] + 1] << 8) | (MemorySpace[x[rs1] + 2] << 16) | (MemorySpace[x[rs1] + 3] << 24);
+                    std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
+                }
+                else if (funct3 == 0x0) {
+                    std::cout << "Load byte instruction detected" << std::endl;
+                    if (MemorySpace[x[rs1]]<<7 ) {
+                        x[rd] = MemorySpace[x[rs1]] | 0xFFFFFF00;
+                    } else {
+                        x[rd] = MemorySpace[x[rs1]];
+                    }
+                    std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
+                }
+                else if (funct3 == 0x1) {
+                    std::cout << "Load half word instruction detected" << std::endl;
+                    if (MemorySpace[x[rs1] + 1] <<7) {
+                        x[rd] = (MemorySpace[x[rs1] + 1] << 8) | MemorySpace[x[rs1]] | 0xFFFF0000;
+                    } else {
+                        x[rd] = (MemorySpace[x[rs1] + 1] << 8) | MemorySpace[x[rs1]];
+                    }
+                    std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
+                }
+                else if (funct3 == 0x4) {
+                    std::cout << "Load half word unsigned instruction detected" << std::endl;
+                    x[rd] = (MemorySpace[x[rs1] + 1] << 8) | MemorySpace[x[rs1]];
+                    std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
+                }
+                else if (funct3 == 0x5) {
+                    std::cout << "Load byte unsigned instruction detected" << std::endl;
+                    x[rd] = MemorySpace[x[rs1]];
+                    std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
+                }
+                break;
             
-        //     case 0x23: std::cout<<"Store Instruction detected" <<std::endl;
-        //                if(funct3==0x2)
-        //                {
+            case 0x23: std::cout<<"Store Instruction detected" <<std::endl;
+                       if(funct3==0x2)
+                       {
                         
-        //                 std::cout<<"Store word Instruction detected" <<std::endl;
-        //                 MemorySpace[x[rd]]=x[rs1];
-        //                 MemorySpace[x[rd]+1]=x[rs1]<<8;
-        //                 MemorySpace[x[rd]+2]=x[rs1]<<16;
-        //                 MemorySpace[x[rd]+3]=x[rs1]<<24;
-        //                 std::cout<<"x[rs1]="<<std::dec<<x[rs1]<<std::endl;
-        //                }
-        //                break;
+                        std::cout<<"Store word Instruction detected" <<std::endl;
+                        MemorySpace[x[rd]]=x[rs1];
+                        MemorySpace[x[rd]+1]=x[rs1]<<8;
+                        MemorySpace[x[rd]+2]=x[rs1]<<16;
+                        MemorySpace[x[rd]+3]=x[rs1]<<24;
+                        std::cout<<"x[rs1]="<<std::dec<<x[rs1]<<std::endl;
+                       }
+                       break;
 
 
-        // }
+        }
 
     }
-    // std::cout<<"MemorySpace[1000]="<<std::hex<<static_cast<int>(MemorySpace[1000])<<"\n";
-    // std::cout<<"MemorySpace[1001]="<<std::hex<<static_cast<int>(MemorySpace[1001])<<"\n";
-    // std::cout<<"MemorySpace[1002]="<<std::hex<<static_cast<int>(MemorySpace[1002])<<"\n";
-    // std::cout<<"MemorySpace[1003]="<<std::hex<<static_cast<int>(MemorySpace[1003])<<"\n";
+    std::cout<<"MemorySpace[1000]="<<std::hex<<static_cast<int>(MemorySpace[1000])<<"\n";
+    std::cout<<"MemorySpace[1001]="<<std::hex<<static_cast<int>(MemorySpace[1001])<<"\n";
+    std::cout<<"MemorySpace[1002]="<<std::hex<<static_cast<int>(MemorySpace[1002])<<"\n";
+    std::cout<<"MemorySpace[1003]="<<std::hex<<static_cast<int>(MemorySpace[1003])<<"\n";
 
 
-    // std::cout<<"x[11]="<<std::dec<<x[11]<<std::endl;
+    std::cout<<"x[11]="<<std::dec<<x[11]<<std::endl;
 
 
     return 0;
