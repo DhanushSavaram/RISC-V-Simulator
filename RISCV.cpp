@@ -18,7 +18,8 @@ uint8_t MemorySpace[1 << 16] = {};
 uint32_t StartAddress = 0;
 uint32_t StackAddress = 1 << 16;
 uint32_t x[32] = {};
-uint32_t sp = 0;
+uint32_t pc=0;
+int mode;
 std::string MemoryImage;
 int CurrentInstr;
 
@@ -26,7 +27,9 @@ int CurrentInstr;
 void Fetch(){
 
     CurrentInstr = MemorySpace[pc] | (MemorySpace[pc + 1] << 8) | (MemorySpace[pc + 2] << 16) | (MemorySpace[pc + 3] << 24);
-    std::cout << "Current Instruction: " <<std::hex<< CI << std::endl;
+    #ifdef debug
+    std::cout << "Current Instruction: " <<std::hex<< CurrentInstr << std::endl;
+    #endif
 }
 
 
@@ -54,7 +57,7 @@ int ReadMem(int pc, int datatype, int sign)
 }
 
 
- void StoreMem(int location, bytes, int regst){
+ void StoreMem(int location, int bytes, int regst){
 
     for(int i=0;i<bytes;i++)
     {
@@ -68,15 +71,15 @@ int main(int argc, char* argv[]) {
     int ProgramSize = 0;
 
     switch(argc){
-        case 5: MemoryFile = argv[1];
+        case 4: MemoryImage = argv[1];
                 StartAddress = std::stoi(argv[2]);
                 StackAddress = std::stoi(argv[3]);
-                mode = std::stoi(argv[3]);
+                // mode = std::stoi(argv[3]);
                 break;
-        case 3: MemoryFile = argv[1];
+        case 3: MemoryImage = argv[1];
                 mode = std::stoi(argv[2]);
                 break;
-        case 1: MemoryFile = DefaultFile;
+        case 1: MemoryImage = DefaultFile;
 
     }
 
@@ -110,19 +113,19 @@ int main(int argc, char* argv[]) {
             sscanf(data.c_str(), "%x", &value);
             ProgramSize += 4; 
 
-            if (bytes.size() == 8) 
+            if (data.size() == 8) 
             {
                 MemorySpace[address]   = value & 0xFF;
                 MemorySpace[address + 1] = (value >> 8) & 0xFF;
                 MemorySpace[address + 2] = (value >> 16) & 0xFF;
                 MemorySpace[address + 3] = (value >> 24) & 0xFF;
             } 
-            else if (bytes.size() == 4) 
+            else if (data.size() == 4) 
             {
                 MemorySpace[address]   = value & 0xFF;
                 MemorySpace[address + 1] = (value >> 8) & 0xFF;
             } 
-            else if (bytes.size() == 2) 
+            else if (data.size() == 2) 
             {
                 MemorySpace[address]   = value & 0xFF;
             }
@@ -151,17 +154,17 @@ int main(int argc, char* argv[]) {
     uint32_t rs1;
     uint32_t imm;
 
-    while (true) 
-    {
+    // while (true) 
+    // {
 
-        Fetch();
-        if(CurrentInstr==0){
-            break;
-        }
-        Decode();
-        Execute();
-        pc += 4;
-    }
+    //     Fetch();
+    //     if(CurrentInstr==0){
+    //         break;
+    //     }
+    //     Decode();
+    //     Execute();
+    //     pc += 4;
+    // }
 
         // imm = CI >> 20;
         // opcode = CI & 0x7f;
