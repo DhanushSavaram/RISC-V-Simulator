@@ -13,8 +13,6 @@
 #define word 4
 #define halfword 2
 #define byte 1
-#define negative 1
-#define positive 0
 
 #define Verbose 1
 #define Silent 0
@@ -38,18 +36,12 @@ uint8_t funct7;
 uint32_t imm;
 
 
-int ReadMem(int pc, int datatype, int sign)
+int ReadMem(int pc, int datatype)
 {
 
     int mem;
-    if ((datatype == byte) && (sign==negative))
+    if (datatype == byte)
        mem=MemorySpace[pc]>>7?MemorySpace[pc]|(0xffffff00):MemorySpace[pc];
-
-    else if (datatype == byte)
-       mem=MemorySpace[pc];
-
-    else if ((datatype==halfword) && (sign==negative))  
-       mem= (MemorySpace[pc+1]>>7) ?  (MemorySpace[pc]|(MemorySpace[pc+1]<<8)|(0xffff0000)) : (MemorySpace[pc]|(MemorySpace[pc+1]<<8));
 
     else if (datatype == halfword)
        mem=MemorySpace[pc]|MemorySpace[pc+1]<<8; 
@@ -77,7 +69,7 @@ int ReadMem(int pc, int datatype, int sign)
 void Fetch()
 {
 
-    CurrentInstr = ReadMem(pc, word, positive);
+    CurrentInstr = ReadMem(pc, word);
     #ifdef debug
     std::cout << "Current Instruction: " <<std::hex<< CurrentInstr << std::endl;
     #endif
