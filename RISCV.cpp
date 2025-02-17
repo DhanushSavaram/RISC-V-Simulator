@@ -4,6 +4,12 @@
 #include <sstream>
 #include <string>
 
+#define R 0x33
+#define I 0x3|0x13
+#define S 0x23
+#define B 0x63
+#define J 0x6f
+#define U 0x37
 #define word 4
 #define halfword 2
 #define byte 1
@@ -23,7 +29,13 @@ int mode;
 std::string MemoryImage;
 int CurrentInstr;
 
-
+uint8_t opcode;
+uint8_t rd;
+uint8_t funct3;
+uint8_t rs1;
+uint8_t rs2;
+uint8_t funct7;
+uint32_t imm;
 
 
 int ReadMem(int pc, int datatype, int sign)
@@ -71,8 +83,44 @@ void Fetch()
     #endif
 }
 
-// void Decode();
-// void Execute();
+void Decode()
+{
+
+    opcode=CurrentInstr & 0x7f;
+    if(opcode == R)
+    {
+        rd = (CurrentInstr>>7) & 0x1f;
+        funct3 = (CurrentInstr>>12) & 0x7;
+        rs1 = (CurrentInstr>>15) & 0x1f;
+        rs2 = (CurrentInstr>>20) & 0x1f;
+        funct7 = CurrentInstr>>25;
+
+
+        #ifdef debug
+        std::cout << "rd: " <<std::hex<< (int)rd << std::endl;
+        std::cout << "funct3: " <<std::hex<< (int)funct3 << std::endl;
+        std::cout << "rs1: " <<std::hex<< (int)rs1 << std::endl;
+        std::cout << "rs2: " <<std::hex<< (int)rs2 << std::endl;
+        std::cout << "funct7: " <<std::hex<<(int) funct7 << std::endl;
+        #endif
+    }
+    else if(opcode == S)
+    {
+        funct3 = (CurrentInstr>>12) & 0x7;
+        rs1 = (CurrentInstr>>15) & 0x1f;
+        rs2 = (CurrentInstr>>20) & 0x1f;
+        imm = (CurrentInstr>>7 & 0x1f) | (( CurrentInstr >> 25 & 0x7f) <<5);
+        #ifdef debug
+        std::cout << "funct3: " <<std::hex<< (int)funct3 << std::endl;
+        std::cout << "rs1: " <<std::hex<< (int)rs1 << std::endl;
+        std::cout << "rs2: " <<std::hex<< (int)rs2 << std::endl;
+        std::cout << "imm: " <<std::hex<<imm << std::endl;
+        #endif
+    }
+
+
+}
+//void Execute();
 
 
 
@@ -150,7 +198,7 @@ int main(int argc, char* argv[])
         {
             break;
         }
-        // Decode();
+        Decode();
         // Execute();
         pc = pc + 4;
 
