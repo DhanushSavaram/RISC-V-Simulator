@@ -23,7 +23,7 @@
 uint8_t MemorySpace[1 << 16] = {};
 uint32_t StartAddress = 0;
 uint32_t StackAddress = 1 << 16;
-uint32_t x[32] = {};
+int32_t x[32] = {};    //changed from unsignedint into int
 uint32_t pc=0;
 int mode;
 std::string MemoryImage;
@@ -101,7 +101,7 @@ uint32_t imm;
             #endif
         }
 
-        else if (opcode = I) // I type
+        else if (opcode == I) // I type
         {
 
         rd = (CurrentInstr >> 7) & 0x1F;     
@@ -159,14 +159,99 @@ uint32_t imm;
             imm |= 0xFFE00000;  // Extend the sign to 32 bits
         }
 
-
         }
 
-
-
     }
-//void Execute();
+    
+//DHANUSH--------------------------------------------------------------------------------------------------------------------------------------------------
+void Execute()
+{
+    switch(opcode)
+    {
+        case R: 
+            switch(funct3)
+            {
+                case 0b000:
+                    switch(funct7)
+                    {
+                        case 0b0000000:  x[rd] = x[rs1] + x[rs2]; break;                   // add
+                        case 0b0100000:  x[rd] = x[rs1] - x[rs2]; break;                   // sub
+                    }
+                    break;
+                case 0b001:  x[rd] = x[rs1] << x[rs2]; break;                              // sll
+                case 0b010:  x[rd] = (x[rs1] < x[rs2]) ? 1 : 0; break;                     // slt
+                case 0b011:  x[rd] = (uint32_t)x[rs1] < (uint32_t)x[rs2] ? 1 : 0; break;   // sltu
+                case 0b100:  x[rd] = x[rs1] ^ x[rs2]; break;                               // xor
+                case 0b101:
+                    switch(funct7)
+                    {
+                        case 0b0000000:  x[rd] = x[rs1] >> x[rs2]; break;                  // srl
+                        case 0b0100000:  x[rd] = (int32_t)x[rs1] >> x[rs2]; break;         // sra
+                    }
+                    break;
+                case 0b110:  x[rd] = x[rs1] | x[rs2]; break;                               // or
+                case 0b111:  x[rd] = x[rs1] & x[rs2]; break;                               // and
+            }
+            break;
+        
+        case I:
+            switch(funct3)
+            {
+                case 0b000: x[rd] = x[rs1] + imm; break;                                   // addi
+                case 0b010: x[rd] = (x[rs1] < imm) ? 1 : 0; break;                         // slti
+                case 0b011: x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;       // sltiu
+                case 0b100: x[rd] = x[rs1] ^ imm; break;                                   // xori
+                case 0b110: x[rd] = x[rs1] | imm; break;                                   // ori
+                case 0b111: x[rd] = x[rs1] & imm; break;                                   // andi
+                case 0b001: x[rd] = x[rs1] << (imm & 0x1F); break;                         // slli
+                case 0b101:
+                    switch(funct7)
+                    {
+                        case 0b0000000: x[rd] = x[rs1] >> (imm & 0x1F); break;             // srli
+                        case 0b0100000: x[rd] = (int32_t)x[rs1] >> (imm & 0x1F); break;    // srai
+                    }
+                    break;
+                case 0b000: x[rd] = pc + 4; pc = x[rs1] + imm; break;                      // jalr
+            }
+            break;
+        
+        case S:
+            switch(funct3)
+            {
+                case 0b000: MemorySpace[x[rs1] + imm] = (x[rs2] & 0xFF); break;                  // sb
+                case 0b001: *(uint16_t*)&MemorySpace[x[rs1] + imm] = (x[rs2] & 0xFFFF); break;   // sh
+                case 0b010: *(uint32_t*)&MemorySpace[x[rs1] + imm] = x[rs2]; break;              // sw
+            }
+            break;
+        
+        case B:
+            switch(funct3)
+            {
+                case 0b000: if (x[rs1] == x[rs2]) pc += imm; break;                         // beq
+                case 0b001: if (x[rs1] != x[rs2]) pc += imm; break;                         // bne
+                case 0b100: if (x[rs1] < x[rs2]) pc += imm; break;                          // blt
+                case 0b101: if (x[rs1] >= x[rs2]) pc += imm; break;                         // bge
+                case 0b110: if ((uint32_t)x[rs1] < (uint32_t)x[rs2]) pc += imm; break;      // bltu
+                case 0b111: if ((uint32_t)x[rs1] >= (uint32_t)x[rs2]) pc += imm; break;     // bgeu
+            }
+            break;
+        
+        case U:
+            switch(opcode)
+            {
+                case LUI: x[rd] = imm << 12; break;                                         // Load Upper Immediate
+                case AUIPC: x[rd] = pc + (imm << 12); break;                                // Add Upper Immediate to PC
+            }
+            break;
+        
+        case J:
+            x[rd] = pc + 4;
+            pc += imm;
+            break;                                                                          // JAL
+    }
+}
 
+  //SAVARAM-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
     int main(int argc, char* argv[]) 
