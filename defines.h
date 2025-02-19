@@ -1,0 +1,13 @@
+#define R 0x33
+#define I 0x3|0x13
+#define S 0x23
+#define B 0x63
+#define J 0x6f
+#define U 0x37
+#define word 4
+#define halfword 2
+#define byte 1
+#define negative 1
+#define positive 0
+#define Verbose 1
+#define DefaultFile "prog.mem"

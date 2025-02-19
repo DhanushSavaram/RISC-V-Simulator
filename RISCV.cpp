@@ -3,22 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-
-#define R 0x33
-#define I 0x3|0x13
-#define S 0x23
-#define B 0x63
-#define J 0x6f
-#define U 0x37
-#define word 4
-#define halfword 2
-#define byte 1
-#define negative 1
-#define positive 0
-
-#define Verbose 1
-#define Silent 0
-#define DefaultFile "prog.mem"
+#include "defines.h"
 
 uint8_t MemorySpace[1 << 16] = {};
 uint32_t StartAddress = 0;
@@ -36,6 +21,36 @@ uint8_t rs1;
 uint8_t rs2;
 uint8_t funct7;
 uint32_t imm;
+
+
+
+    void PrintVerbose(int mode)
+    {
+            if(mode==Verbose)
+            {
+                std::cout<<std::hex<<pc<<std::endl;
+                for(int i=0; i<32;i++)
+                {
+                    std::cout<<std::hex<<x[i]<<std::endl; 
+                }
+
+                std::cout<<std::hex<<CurrentInstr<<std::endl;
+            }
+
+    }
+
+    void PrintSilent(int mode)
+    {
+        if(mode==Silent)
+        {
+            std::cout<<std::hex<<pc<<std::endl;
+            for(int i=0; i<32;i++)
+            {
+                std::cout<<std::hex<<x[i]<<std::endl; 
+            }
+
+        }
+    }
 
 
     int ReadMem(int pc, int datatype)
@@ -101,7 +116,7 @@ uint32_t imm;
             #endif
         }
 
-        else if (opcode = I) // I type
+        else if (opcode = I) 
         {
 
         rd = (CurrentInstr >> 7) & 0x1F;     
@@ -110,7 +125,7 @@ uint32_t imm;
 
         imm = (CurrentInstr >> 20) & 0xFFF;    
         if (imm & 0x800) {  
-            imm |= 0xFFFFF000; //32 bits ext
+            imm |= 0xFFFFF000; 
         }
 
         }
@@ -130,7 +145,7 @@ uint32_t imm;
             #endif
         }
 
-        else if (opcode == B) // B Type
+        else if (opcode == B)
         {
         imm = ((CurrentInstr >> 31) & 0x1) << 12 | ((CurrentInstr >> 7) & 0x1) << 11 |  ((CurrentInstr >> 25) & 0x3F) << 5 | ((CurrentInstr >> 8) & 0xF) << 1;
         rs1 = (CurrentInstr >> 15) & 0x1F;     
@@ -138,25 +153,24 @@ uint32_t imm;
         funct3 = (CurrentInstr >> 12) & 0x7;
         if (imm & 0x1000) 
         {
-            imm |= 0xFFFFE000;  //32 bits ext
+            imm |= 0xFFFFE000; 
         }
         }
 
-        else if (opcode == U )  // U type 
+        else if (opcode == U )
         {
         rd = (CurrentInstr >> 7) & 0x1F;
         imm = CurrentInstr & 0xFFFFF000;
 
         }
 
-        else if(opcode == J ) // J Type
+        else if(opcode == J ) 
         {
 
         rd = (CurrentInstr >> 7) & 0x1F;
         imm = ((CurrentInstr >> 31) & 0x1) << 20 | ((CurrentInstr >> 21) & 0x3FF) << 1 | ((CurrentInstr >> 20) & 0x1) << 11 | ((CurrentInstr >> 12) & 0xFF) << 12;  
 
         if (imm & 0x100000) {
-            imm |= 0xFFE00000;  // Extend the sign to 32 bits
         }
 
 
@@ -165,7 +179,94 @@ uint32_t imm;
 
 
     }
-//void Execute();
+
+    void Execute()
+    {
+        switch(opcode)
+        {
+            case R: 
+                switch(funct3)
+                {
+                    case 0b000:
+                        switch(funct7)
+                        {
+                            case 0b0000000:  x[rd] = x[rs1] + x[rs2]; break;                   // add
+                            case 0b0100000:  x[rd] = x[rs1] - x[rs2]; break;                   // sub
+                        }
+                        break;
+                    case 0b001:  x[rd] = x[rs1] << x[rs2]; break;                              // sll
+                    case 0b010:  x[rd] = (x[rs1] < x[rs2]) ? 1 : 0; break;                     // slt
+                    case 0b011:  x[rd] = (uint32_t)x[rs1] < (uint32_t)x[rs2] ? 1 : 0; break;   // sltu
+                    case 0b100:  x[rd] = x[rs1] ^ x[rs2]; break;                               // xor
+                    case 0b101:
+                        switch(funct7)
+                        {
+                            case 0b0000000:  x[rd] = x[rs1] >> x[rs2]; break;                  // srl
+                            case 0b0100000:  x[rd] = (int32_t)x[rs1] >> x[rs2]; break;         // sra
+                        }
+                        break;
+                    case 0b110:  x[rd] = x[rs1] | x[rs2]; break;                               // or
+                    case 0b111:  x[rd] = x[rs1] & x[rs2]; break;                               // and
+                }
+                break;
+            
+            case I:
+                switch(funct3)
+                {
+                    case 0b000: x[rd] = x[rs1] + imm; break;                                   // addi
+                    case 0b010: x[rd] = (x[rs1] < imm) ? 1 : 0; break;                         // slti
+                    case 0b011: x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;       // sltiu
+                    case 0b100: x[rd] = x[rs1] ^ imm; break;                                   // xori
+                    case 0b110: x[rd] = x[rs1] | imm; break;                                   // ori
+                    case 0b111: x[rd] = x[rs1] & imm; break;                                   // andi
+                    case 0b001: x[rd] = x[rs1] << (imm & 0x1F); break;                         // slli
+                    case 0b101:
+                        switch(funct7)
+                        {
+                            case 0b0000000: x[rd] = x[rs1] >> (imm & 0x1F); break;             // srli
+                            case 0b0100000: x[rd] = (int32_t)x[rs1] >> (imm & 0x1F); break;    // srai
+                        }
+                        break;
+                    case 0b000: x[rd] = pc + 4; pc = x[rs1] + imm; break;                      // jalr
+                }
+                break;
+            
+            case S:
+                switch(funct3)
+                {
+                    case 0b000: MemorySpace[x[rs1] + imm] = (x[rs2] & 0xFF); break;                  // sb
+                    case 0b001: *(uint16_t*)&MemorySpace[x[rs1] + imm] = (x[rs2] & 0xFFFF); break;   // sh
+                    case 0b010: *(uint32_t*)&MemorySpace[x[rs1] + imm] = x[rs2]; break;              // sw
+                }
+                break;
+            
+            case B:
+                switch(funct3)
+                {
+                    case 0b000: if (x[rs1] == x[rs2]) pc += imm; break;                         // beq
+                    case 0b001: if (x[rs1] != x[rs2]) pc += imm; break;                         // bne
+                    case 0b100: if (x[rs1] < x[rs2]) pc += imm; break;                          // blt
+                    case 0b101: if (x[rs1] >= x[rs2]) pc += imm; break;                         // bge
+                    case 0b110: if ((uint32_t)x[rs1] < (uint32_t)x[rs2]) pc += imm; break;      // bltu
+                    case 0b111: if ((uint32_t)x[rs1] >= (uint32_t)x[rs2]) pc += imm; break;     // bgeu
+                }
+                break;
+            
+            case U:
+                switch(opcode)
+                {
+                    case LUI: x[rd] = imm << 12; break;                                         // Load Upper Immediate
+                    case AUIPC: x[rd] = pc + (imm << 12); break;                                // Add Upper Immediate to PC
+                }
+                break;
+            
+            case J:
+                x[rd] = pc + 4;
+                pc += imm;
+                break;                                                                          // JAL
+        }
+    }
+
 
 
 
@@ -175,16 +276,15 @@ uint32_t imm;
 
         switch(argc)
         {
+            case 5: MemoryImage = argv[1];
+                    StartAddress = std::stoi(argv[2]);
+                    StackAddress = std::stoi(argv[3]);
+                    mode = std::stoi(argv[4]);
             case 4: MemoryImage = argv[1];
                     StartAddress = std::stoi(argv[2]);
                     StackAddress = std::stoi(argv[3]);
                     // mode = std::stoi(argv[3]);
                     break;
-            case 3: MemoryImage = argv[1];
-                    mode = std::stoi(argv[2]);
-                    break;
-            case 1: MemoryImage = DefaultFile;
-
         }
 
         #ifdef debug
@@ -244,7 +344,7 @@ uint32_t imm;
                 break;
             }
             Decode();
-            // Execute();
+            Execute();
             pc = pc + 4;
 
         }
