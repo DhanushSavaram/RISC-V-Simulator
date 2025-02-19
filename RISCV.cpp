@@ -116,7 +116,7 @@ uint32_t imm;
             #endif
         }
 
-        else if (opcode = I) 
+        else if (opcode == I) 
         {
 
         rd = (CurrentInstr >> 7) & 0x1F;     
