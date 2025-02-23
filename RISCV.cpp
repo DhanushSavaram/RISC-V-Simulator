@@ -26,14 +26,21 @@ uint32_t pc;
 
 
 
+
+
+
     void Print(uint32_t pc, int mode)
     {
             if(mode==Verbose)
             {
                 std::cout<<std::hex<<pc<<std::endl;
                 for(int i=0; i<32;i++)
-                {
-                    std::cout<<std::dec<<"x["<<i<<"]"<<std::hex<<x[i]<<std::endl; 
+                {  
+                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<"              "; 
+                    if((i%6 == 0) && (i!=0))
+                    {
+                        std::cout<<std::endl;
+                    }
                 }
 
                 std::cout<<std::hex<<CurrentInstr<<std::endl;
@@ -44,7 +51,11 @@ uint32_t pc;
                 std::cout<<std::hex<<pc<<std::endl;
                 for(int i=0; i<32;i++)
                 {
-                    std::cout<<std::dec<<"x["<<i<<"]"<<std::hex<<x[i]<<std::endl; 
+                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<"              "; 
+                    if((i%6 == 0) && (i!=0))
+                    {
+                        std::cout<<std::endl;
+                    }
                 }
     
             }
@@ -299,7 +310,6 @@ uint32_t pc;
         int ProgramSize = 0;
         pc = StartAddress;
         x[2] = StackAddress;
-
 
         switch(argc)
         {
