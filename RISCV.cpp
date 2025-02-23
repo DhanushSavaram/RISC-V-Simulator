@@ -4,12 +4,11 @@
 #include <sstream>
 #include <string>
 #include "defines.h"
+#define StartAddress 0 
+#define StackAddress 1<<16 
 
 uint8_t MemorySpace[1 << 16] = {};
-uint32_t StartAddress = 0;
-uint32_t StackAddress = 1 << 16;
 uint32_t x[32] = {};
-uint32_t pc=0;
 int mode;
 std::string MemoryImage;
 int CurrentInstr;
@@ -21,39 +20,39 @@ uint8_t rs1;
 uint8_t rs2;
 uint8_t funct7;
 uint32_t imm;
+uint32_t pc;
 
 
 
-    void PrintVerbose(int mode)
+
+
+    void Print(uint32_t pc, int mode)
     {
             if(mode==Verbose)
             {
                 std::cout<<std::hex<<pc<<std::endl;
                 for(int i=0; i<32;i++)
                 {
-                    std::cout<<std::hex<<x[i]<<std::endl; 
+                    std::cout<<std::dec<<"x["<<i<<"]"<<std::hex<<x[i]<<std::endl; 
                 }
 
                 std::cout<<std::hex<<CurrentInstr<<std::endl;
             }
 
-    }
-
-    void PrintSilent(int mode)
-    {
-        if(mode==Silent)
-        {
-            std::cout<<std::hex<<pc<<std::endl;
-            for(int i=0; i<32;i++)
+            else 
             {
-                std::cout<<std::hex<<x[i]<<std::endl; 
+                std::cout<<std::hex<<pc<<std::endl;
+                for(int i=0; i<32;i++)
+                {
+                    std::cout<<std::dec<<"x["<<i<<"]"<<std::hex<<x[i]<<std::endl; 
+                }
+    
             }
 
-        }
     }
 
 
-    int ReadMem(int pc, int datatype)
+    int ReadMem(uint32_t pc, int datatype)
     {
 
         int mem;
@@ -85,7 +84,7 @@ uint32_t imm;
     }
 
 
-    void Fetch()
+    void Fetch(uint32_t pc)
     {
 
         CurrentInstr = ReadMem(pc, word);
@@ -94,7 +93,7 @@ uint32_t imm;
         #endif
     }
 
-    void Decode()
+    void Decode(uint32_t pc)
     {
 
         opcode = CurrentInstr & 0x7f;
@@ -108,10 +107,10 @@ uint32_t imm;
 
 
             #ifdef debug
-            std::cout << "rd: " <<std::hex<< (int)rd << std::endl;
+            std::cout << "rd: " <<std::dec<< (int)rd << std::endl;
             std::cout << "funct3: " <<std::hex<< (int)funct3 << std::endl;
-            std::cout << "rs1: " <<std::hex<< (int)rs1 << std::endl;
-            std::cout << "rs2: " <<std::hex<< (int)rs2 << std::endl;
+            std::cout << "rs1: " <<std::dec<< (int)rs1 << std::endl;
+            std::cout << "rs2: " <<std::dec<< (int)rs2 << std::endl;
             std::cout << "funct7: " <<std::hex<<(int) funct7 << std::endl;
             #endif
         }
@@ -124,9 +123,16 @@ uint32_t imm;
         rs1 = (CurrentInstr >> 15) & 0x1F;     
 
         imm = (CurrentInstr >> 20) & 0xFFF;    
-        if (imm & 0x800) {  
+        if (imm & 0x800) 
+        {  
             imm |= 0xFFFFF000; 
         }
+        #ifdef debug
+        std::cout<<"IMM: "<<std::hex<<imm<<std::endl;
+        std::cout << "rd: " <<std::dec<< (int)rd << std::endl;
+        std::cout << "funct3: " <<std::hex<< (int)funct3 << std::endl;
+        std::cout << "rs1: " <<std::dec<< (int)rs1 << std::endl;
+        #endif
 
         }
 
@@ -180,7 +186,7 @@ uint32_t imm;
 
     }
 
-    void Execute()
+    void Execute(uint32_t pc)
     {
         switch(opcode)
         {
@@ -198,7 +204,6 @@ uint32_t imm;
                     case 0b010:  x[rd] = (x[rs1] < x[rs2]) ? 1 : 0; break;                     // slt
                     case 0b011:  x[rd] = (uint32_t)x[rs1] < (uint32_t)x[rs2] ? 1 : 0; break;   // sltu
                     case 0b100:  x[rd] = x[rs1] ^ x[rs2]; break;                               // xor
-                    case 0b101:
                         switch(funct7)
                         {
                             case 0b0000000:  x[rd] = x[rs1] >> x[rs2]; break;                  // srl
@@ -213,7 +218,13 @@ uint32_t imm;
             case I:
                 switch(funct3)
                 {
-                    case 0b000: x[rd] = x[rs1] + imm; break;                                   // addi
+
+                    case 0b000: std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
+                                std::cout<<"x["<<rs1<<"]"<<x[rs1]<<std::endl;
+                                std::cout<<"imm: "<<std::hex<<imm<<std::endl;
+                    x[rd] = x[rs1] + imm;   // addi
+
+                                break;                                   
                     case 0b010: x[rd] = (x[rs1] < imm) ? 1 : 0; break;                         // slti
                     case 0b011: x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;       // sltiu
                     case 0b100: x[rd] = x[rs1] ^ imm; break;                                   // xori
@@ -227,16 +238,30 @@ uint32_t imm;
                             case 0b0100000: x[rd] = (int32_t)x[rs1] >> (imm & 0x1F); break;    // srai
                         }
                         break;
-                    case 0b000: x[rd] = pc + 4; pc = x[rs1] + imm; break;                      // jalr
+                    //case 0b000: x[rd] = pc + 4; pc = x[rs1] + imm; break;                      // jalr
                 }
                 break;
             
             case S:
                 switch(funct3)
                 {
-                    case 0b000: MemorySpace[x[rs1] + imm] = (x[rs2] & 0xFF); break;                  // sb
-                    case 0b001: *(uint16_t*)&MemorySpace[x[rs1] + imm] = (x[rs2] & 0xFFFF); break;   // sh
-                    case 0b010: *(uint32_t*)&MemorySpace[x[rs1] + imm] = x[rs2]; break;              // sw
+                    case 0b000: std::cout<<"KArthik"<<std::endl;
+                                StoreMem(rs2+imm, 1, rs1);
+                                #ifdef debug
+                                std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
+                                #endif
+                                break;                  // sb
+                    case 0b001: StoreMem(rs2+imm, 2, rs1) ;
+                                #ifdef debug
+                                std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
+                                #endif 
+                                break;   // sh
+                    case 0b010: std::cout<<"KArthik"<<std::endl;
+                                StoreMem(rs2+imm, 4, rs1);
+                                #ifdef debug
+                                std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
+                                #endif 
+                                break;              // sw
                 }
                 break;
             
@@ -255,16 +280,15 @@ uint32_t imm;
             case U:
                 switch(opcode)
                 {
-                    case LUI: x[rd] = imm << 12; break;                                         // Load Upper Immediate
-                    case AUIPC: x[rd] = pc + (imm << 12); break;                                // Add Upper Immediate to PC
+                    // case LUI: x[rd] = imm << 12; break;                                         // Load Upper Immediate
+                    // case AUIPC: x[rd] = pc + (imm << 12); break;                                // Add Upper Immediate to PC
                 }
                 break;
             
-            case J:
-                x[rd] = pc + 4;
-                pc += imm;
-                break;                                                                          // JAL
-        }
+            case J: break;
+                }
+                Print(pc, mode);
+
     }
 
 
@@ -273,23 +297,31 @@ uint32_t imm;
     int main(int argc, char* argv[]) 
     {
         int ProgramSize = 0;
+        pc = StartAddress;
+        x[2] = StackAddress;
+
 
         switch(argc)
         {
             case 5: MemoryImage = argv[1];
-                    StartAddress = std::stoi(argv[2]);
-                    StackAddress = std::stoi(argv[3]);
+                    pc = std::stoi(argv[2]);
+                    x[2] = std::stoi(argv[3]);
                     mode = std::stoi(argv[4]);
+                    break;
             case 4: MemoryImage = argv[1];
-                    StartAddress = std::stoi(argv[2]);
-                    StackAddress = std::stoi(argv[3]);
-                    // mode = std::stoi(argv[3]);
+                    pc = std::stoi(argv[2]);
+                    x[2] = std::stoi(argv[3]);
+                    break;
+            case 2: MemoryImage = argv[1];
                     break;
         }
+
+
 
         #ifdef debug
         std::cout << "StartAddress: " << StartAddress << "\n";
         std::cout << "StackAddress: " << StackAddress << "\n";
+        std::cout << "Stack Pointer: "  << x[2] << "\n";
         #endif
 
         std::ifstream file(MemoryImage);
@@ -331,6 +363,10 @@ uint32_t imm;
         for (int i = 0; i < ProgramSize; i++) 
         {
             std::cout << std::hex << i << "  :" << std::hex << (int)MemorySpace[i] << std::endl;
+            // if((i%4 )== 0){
+            // int check = ReadMem(i, 4);
+            // std::cout<<"check: "<<std::hex<<check<<std::endl;
+        //}
         }
         #endif
 
@@ -338,14 +374,17 @@ uint32_t imm;
 
         while(true)
         {
-            Fetch();
-            if(CurrentInstr==0)
+            Fetch(pc);
+            Decode(pc);
+            if(CurrentInstr == 0)
             {
+                Print(pc, mode);
                 break;
             }
-            Decode();
-            Execute();
+            Execute(pc);
+
             pc = pc + 4;
+
 
         }
 
