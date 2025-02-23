@@ -23,39 +23,26 @@ uint32_t imm;
 uint32_t pc;
 
 
-
-
-
-
-
-
     void Print(uint32_t pc, int mode)
     {
             if(mode==Verbose)
             {
-                std::cout<<std::hex<<pc<<std::endl;
+                std::cout<<"Current Instruction : "<<std::hex<<CurrentInstr<<std::endl;
                 for(int i=0; i<32;i++)
                 {  
-                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<"              "; 
-                    if((i%6 == 0) && (i!=0))
-                    {
-                        std::cout<<std::endl;
-                    }
+                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<std::endl; 
+
                 }
 
-                std::cout<<std::hex<<CurrentInstr<<std::endl;
             }
 
             else 
             {
-                std::cout<<std::hex<<pc<<std::endl;
+                std::cout<<"Program Counter : "<<std::hex<<pc<<std::endl;
                 for(int i=0; i<32;i++)
                 {
                     std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<"              "; 
-                    if((i%6 == 0) && (i!=0))
-                    {
-                        std::cout<<std::endl;
-                    }
+
                 }
     
             }
@@ -230,12 +217,9 @@ uint32_t pc;
                 switch(funct3)
                 {
 
-                    case 0b000: std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
-                                std::cout<<"x["<<rs1<<"]"<<x[rs1]<<std::endl;
-                                std::cout<<"imm: "<<std::hex<<imm<<std::endl;
-                    x[rd] = x[rs1] + imm;   // addi
+                    case 0b000: x[rd] = x[rs1] + imm; break;  // addi
 
-                                break;                                   
+                                                                
                     case 0b010: x[rd] = (x[rs1] < imm) ? 1 : 0; break;                         // slti
                     case 0b011: x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;       // sltiu
                     case 0b100: x[rd] = x[rs1] ^ imm; break;                                   // xori
