@@ -1,8 +1,0 @@
-GAS LISTING slti.s 			page 1
-
-
-   1 0000 93025000 	    li t0, 5               # Load immediate value 5 into t0
-   2 0004 13A3A200 	    slti t1, t0, 10        # t1 = (t0 < 10) ? 1 : 0, expected 1
-   3 0008 93A35200 	    slti t2, t0, 5         # t2 = (t0 < 5) ? 1 : 0, expected 0
-   4 000c 13AE62FF 	    slti t3, t0, -10       # t3 = (t0 < -10) ? 1 : 0, expected 0
-   5 0010 67800000 	    jr ra                  # Return execution
