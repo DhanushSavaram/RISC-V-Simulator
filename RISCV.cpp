@@ -25,31 +25,32 @@ uint32_t pc;
 
 
 
-
-    void Print(uint32_t pc, int mode)
+void Print(uint32_t pc, int mode)
     {
             if(mode==Verbose)
             {
-                std::cout<<std::hex<<pc<<std::endl;
+                std::cout<<"Current Instruction : "<<std::hex<<CurrentInstr<<std::endl;
                 for(int i=0; i<32;i++)
-                {
-                    std::cout<<std::dec<<"x["<<i<<"]"<<std::hex<<x[i]<<std::endl; 
+                {  
+                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<std::endl; 
+
                 }
 
-                std::cout<<std::hex<<CurrentInstr<<std::endl;
             }
 
             else 
             {
-                std::cout<<std::hex<<pc<<std::endl;
+                std::cout<<"Program Counter : "<<std::hex<<pc<<std::endl;
                 for(int i=0; i<32;i++)
                 {
-                    std::cout<<std::dec<<"x["<<i<<"]"<<std::hex<<x[i]<<std::endl; 
+                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<std::endl; 
+
                 }
     
             }
 
     }
+
 
 
     int ReadMem(uint32_t pc, int datatype)
@@ -219,10 +220,7 @@ uint32_t pc;
                 switch(funct3)
                 {
 
-                    case 0b000: std::cout<<"x["<<rd<<"]"<<x[rd]<<std::endl;
-                                std::cout<<"x["<<rs1<<"]"<<x[rs1]<<std::endl;
-                                std::cout<<"imm: "<<std::hex<<imm<<std::endl;
-                    x[rd] = x[rs1] + imm;   // addi
+                    case 0b000: x[rd] = x[rs1] + imm;                                          // addi
 
                                 break;                                   
                     case 0b010: x[rd] = (x[rs1] < imm) ? 1 : 0; break;                         // slti
@@ -245,16 +243,16 @@ uint32_t pc;
             case S:
                 switch(funct3)
                 {
-                    case 0b000: std::cout<<"KArthik"<<std::endl;
+                    case 0b000: //std::cout<<"KArthik"<<std::endl;
                                 StoreMem(rs2+imm, 1, rs1);
-                                #ifdef debug
-                                std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
-                                #endif
+                                // #ifdef debug
+                                // std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
+                                // #endif
                                 break;                  // sb
                     case 0b001: StoreMem(rs2+imm, 2, rs1) ;
-                                #ifdef debug
-                                std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
-                                #endif 
+                                // #ifdef debug
+                                // std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
+                                // #endif 
                                 break;   // sh
                     case 0b010: std::cout<<"KArthik"<<std::endl;
                                 StoreMem(rs2+imm, 4, rs1);
@@ -313,6 +311,9 @@ uint32_t pc;
                     x[2] = std::stoi(argv[3]);
                     break;
             case 2: MemoryImage = argv[1];
+                    break;
+            case 3: MemoryImage = argv[1];
+                    mode = std::stoi(argv[2]);
                     break;
         }
 
