@@ -4,6 +4,9 @@
 #include <sstream>
 #include <string>
 #include "defines.h"
+#define UNSIGNED 0
+#define SIGNED 1
+
 #define StartAddress 0 
 #define StackAddress 1<<16 
 
@@ -12,6 +15,7 @@ uint32_t x[32] = {};
 int mode;
 std::string MemoryImage;
 int CurrentInstr;
+int BranchTaken;
 
 uint8_t opcode;
 uint8_t rd;
@@ -25,7 +29,8 @@ uint32_t pc;
 
 
 
-void Print(uint32_t pc, int mode)
+
+void Print(int mode)
     {
             if(mode==Verbose)
             {
@@ -40,7 +45,7 @@ void Print(uint32_t pc, int mode)
 
             else 
             {
-                std::cout<<"Program Counter : "<<std::hex<<pc<<std::endl;
+                std::cout<<"Current Instruction : "<<std::hex<<pc<<std::endl;
                 for(int i=0; i<32;i++)
                 {
                     std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<std::endl; 
@@ -53,51 +58,59 @@ void Print(uint32_t pc, int mode)
 
 
 
-    int ReadMem(uint32_t pc, int datatype)
+
+    int ReadMem(int datatype, int sign, uint32_t location)
     {
 
         int mem;
-        if (datatype == byte)
-        mem=MemorySpace[pc]>>7?MemorySpace[pc]|(0xffffff00):MemorySpace[pc];
+        if ((datatype == byte) && (sign))
+          mem = MemorySpace[location] >> 7 ? MemorySpace[location] | (0xffffff00) : MemorySpace[location];
 
+        else if(datatype == byte)
+          mem = MemorySpace[location];
 
-        else if (datatype==halfword)  
-        mem= (MemorySpace[pc+1]>>7) ?  (MemorySpace[pc]|(MemorySpace[pc+1]<<8)|(0xffff0000)) : (MemorySpace[pc]|(MemorySpace[pc+1]<<8));
+        else if ((datatype == halfword) && (sign))  
+          mem= (MemorySpace[location + 1]>>7) ?  (MemorySpace[location]|(MemorySpace[location+1]<<8)|(0xffff0000)) : (MemorySpace[location]|(MemorySpace[location+1]<<8));
 
+        else if (datatype == halfword ) 
+          mem= (MemorySpace[location]|(MemorySpace[location+1]<<8));
 
-        else if (datatype ==word)
-        mem=MemorySpace[pc] | MemorySpace[pc+1]<<8 | MemorySpace[pc+2]<<16 | MemorySpace[pc+3]<<24;
+        else if (datatype == word)
+          mem = MemorySpace[location] | MemorySpace[location+1]<<8 | MemorySpace[location+2]<<16 | MemorySpace[location+3]<<24;
+        // std::cout << "MEM: " <<std::hex<< mem << std::endl;
 
         return mem; 
 
     }
 
-
-    void StoreMem(int location, int bytes, int regst)
+    void Fetch()
     {
 
+        CurrentInstr = ReadMem(word, UNSIGNED, pc);
+        //std::cout << "Current Instruction: " <<std::hex<< CurrentInstr << std::endl;
+    }
+
+
+    void StoreMem(uint32_t location, int bytes, uint32_t regst)
+    {
+        //std::cout<<"location: "<<std::dec<<location<<std::endl;
         for(int i=0;i<bytes;i++)
         {
             MemorySpace[location+i]=regst>>(8*i); 
         }
+        Fetch();
         
 
     }
 
 
-    void Fetch(uint32_t pc)
-    {
 
-        CurrentInstr = ReadMem(pc, word);
-        #ifdef debug
-        std::cout << "Current Instruction: " <<std::hex<< CurrentInstr << std::endl;
-        #endif
-    }
-
-    void Decode(uint32_t pc)
+    void Decode()
     {
 
         opcode = CurrentInstr & 0x7f;
+        // std::cout << "opcode: " <<std::hex<< (int)opcode << std::endl;
+        
         if(opcode == R)
         {
             rd = (CurrentInstr >> 7) & 0x1f;
@@ -116,7 +129,7 @@ void Print(uint32_t pc, int mode)
             #endif
         }
 
-        else if (opcode == I) 
+        else if ((opcode == I) || (opcode == I_LOADS)) 
         {
 
         rd = (CurrentInstr >> 7) & 0x1F;     
@@ -139,16 +152,17 @@ void Print(uint32_t pc, int mode)
 
         else if(opcode == S)
         {
+
             funct3 = (CurrentInstr>>12) & 0x7;
             rs1 = (CurrentInstr>>15) & 0x1f;
             rs2 = (CurrentInstr>>20) & 0x1f;
             imm = (CurrentInstr>>7 & 0x1f) | (( CurrentInstr >> 25 & 0x7f) <<5);
             imm = (imm>>11) ? imm | 0xffff0000 : imm;
             #ifdef debug
-            std::cout << "funct3: " <<std::hex<< (int)funct3 << std::endl;
-            std::cout << "rs1: " <<std::hex<< (int)rs1 << std::endl;
-            std::cout << "rs2: " <<std::hex<< (int)rs2 << std::endl;
-            std::cout << "imm: " <<std::hex<<imm << std::endl;
+            std::cout << "funct3: " <<std::dec<< (int)funct3 << std::endl;
+            std::cout << "rs1: " <<std::dec<< (int)rs1 << std::endl;
+            std::cout << "rs2: " <<std::dec<< (int)rs2 << std::endl;
+            std::cout << "imm: " <<std::dec<<imm << std::endl;
             #endif
         }
 
@@ -164,7 +178,7 @@ void Print(uint32_t pc, int mode)
         }
         }
 
-        else if (opcode == U )
+        else if (opcode == U_LUI || opcode == U_AUIPC )
         {
         rd = (CurrentInstr >> 7) & 0x1F;
         imm = CurrentInstr & 0xFFFFF000;
@@ -187,7 +201,7 @@ void Print(uint32_t pc, int mode)
 
     }
 
-    void Execute(uint32_t pc)
+    void Execute()
     {
         switch(opcode)
         {
@@ -220,7 +234,7 @@ void Print(uint32_t pc, int mode)
                 switch(funct3)
                 {
 
-                    case 0b000: x[rd] = x[rs1] + imm;                                          // addi
+                    case 0b000: x[rd] = x[rs1] + imm                                          ;// addi
 
                                 break;                                   
                     case 0b010: x[rd] = (x[rs1] < imm) ? 1 : 0; break;                         // slti
@@ -236,56 +250,72 @@ void Print(uint32_t pc, int mode)
                             case 0b0100000: x[rd] = (int32_t)x[rs1] >> (imm & 0x1F); break;    // srai
                         }
                         break;
-                    //case 0b000: x[rd] = pc + 4; pc = x[rs1] + imm; break;                      // jalr
+                    //case 0b000: x[rd] = pc + 4; pc = x[rs1] + imm; break;                    // jalr
                 }
                 break;
             
             case S:
                 switch(funct3)
                 {
-                    case 0b000: //std::cout<<"KArthik"<<std::endl;
-                                StoreMem(rs2+imm, 1, rs1);
-                                // #ifdef debug
-                                // std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
-                                // #endif
-                                break;                  // sb
-                    case 0b001: StoreMem(rs2+imm, 2, rs1) ;
-                                // #ifdef debug
-                                // std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
-                                // #endif 
-                                break;   // sh
-                    case 0b010: std::cout<<"KArthik"<<std::endl;
-                                StoreMem(rs2+imm, 4, rs1);
-                                #ifdef debug
-                                std::cout<<"MemorySpace["<<(rs2+imm)<<"]"<<MemorySpace[rs2+imm]<<std::endl; 
-                                #endif 
-                                break;              // sw
-                }
+                    case 0b000: StoreMem(x[rs1]+imm, byte, x[rs2]); break;                  // sb
+                    case 0b001: StoreMem(x[rs1]+imm, halfword, x[rs2]); break;              // sh
+                    case 0b010: StoreMem(x[rs1]+imm, word, x[rs2]); break;                  // sw
+                }   
                 break;
             
             case B:
                 switch(funct3)
                 {
-                    case 0b000: if (x[rs1] == x[rs2]) pc += imm; break;                         // beq
-                    case 0b001: if (x[rs1] != x[rs2]) pc += imm; break;                         // bne
-                    case 0b100: if (x[rs1] < x[rs2]) pc += imm; break;                          // blt
-                    case 0b101: if (x[rs1] >= x[rs2]) pc += imm; break;                         // bge
-                    case 0b110: if ((uint32_t)x[rs1] < (uint32_t)x[rs2]) pc += imm; break;      // bltu
-                    case 0b111: if ((uint32_t)x[rs1] >= (uint32_t)x[rs2]) pc += imm; break;     // bgeu
-                }
-                break;
+                    case 0b000: if (x[rs1] == x[rs2])                                           // beq
+                                {
+                                    BranchTaken = 1;
+                                    pc += imm;
+                                }   break;                                                        
+                    case 0b001: if (x[rs1] != x[rs2])                                           // bne
+                                {
+                                    BranchTaken = 1;
+                                    pc += imm; 
+                                }   break;                                                        
+                    case 0b100: if ((uint32_t)x[rs1] < (uint32_t)x[rs2])                        // blt
+                                {   
+                                    BranchTaken = 1;
+                                    pc += imm; 
+                                }   break;                                                            
+                    case 0b101: if ((uint32_t)x[rs1] >= (uint32_t)x[rs2])                       // bge
+                                {
+                                   BranchTaken = 1;
+                                   pc += imm; 
+                                }  break;                         
+                    case 0b110: if (x[rs1] < x[rs2])                                            // bltu
+                                {
+                                    BranchTaken = 1;
+                                    pc += imm;    
+                                }   break;
+                    case 0b111: if (x[rs1] >=x[rs2])                                            // bgeu
+                                {
+                                    BranchTaken = 1;
+                                    pc += imm; 
+                                }   break;     
+                } break;
             
-            case U:
-                switch(opcode)
-                {
-                    // case LUI: x[rd] = imm << 12; break;                                         // Load Upper Immediate
-                    // case AUIPC: x[rd] = pc + (imm << 12); break;                                // Add Upper Immediate to PC
-                }
-                break;
+            case U_LUI   : x[rd] = imm; break; 
+            case U_AUIPC : x[rd] = pc + imm; break;
+
             
             case J: break;
+            case I_LOADS: 
+                switch(funct3)
+                        { 
+                            case 0b000: x[rd] = ReadMem(byte, SIGNED, imm + x[rs1]); break;       // Load Byte
+                            case 0b001: x[rd] = ReadMem(halfword, SIGNED,imm +  x[rs1]); break;   // Load Halfword  
+                            case 0b010: x[rd] = ReadMem(word, UNSIGNED, imm +  x[rs1]); break;    // Load Word
+                            case 0b100: x[rd] = ReadMem(byte, UNSIGNED, imm + x[rs1] ); break;    // Load Byte Unsigned
+                            case 0b101: x[rd] = ReadMem(halfword, UNSIGNED, imm + x[rs1]);break;  // Load Halfword Unsigned
+                        } break;
                 }
-                Print(pc, mode);
+                x[0]=0;
+                Print(mode);
+
 
     }
 
@@ -364,10 +394,6 @@ void Print(uint32_t pc, int mode)
         for (int i = 0; i < ProgramSize; i++) 
         {
             std::cout << std::hex << i << "  :" << std::hex << (int)MemorySpace[i] << std::endl;
-            // if((i%4 )== 0){
-            // int check = ReadMem(i, 4);
-            // std::cout<<"check: "<<std::hex<<check<<std::endl;
-        //}
         }
         #endif
 
@@ -375,16 +401,21 @@ void Print(uint32_t pc, int mode)
 
         while(true)
         {
-            Fetch(pc);
-            Decode(pc);
+            Fetch();
+            Decode();
             if(CurrentInstr == 0)
             {
-                Print(pc, mode);
+                Print(mode);
                 break;
             }
-            Execute(pc);
+            Execute();
 
-            pc = pc + 4;
+            if(!BranchTaken)
+            {
+                pc = pc + 4;
+
+            }
+            BranchTaken = 0;
 
 
         }
