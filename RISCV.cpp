@@ -15,7 +15,7 @@ uint32_t x[32] = {};
 int mode;
 std::string MemoryImage;
 int CurrentInstr;
-int BranchTaken;
+bool BranchTaken;
 
 uint8_t opcode;
 uint8_t rd;
@@ -83,12 +83,7 @@ void Print(int mode)
 
     }
 
-    void Fetch()
-    {
 
-        CurrentInstr = ReadMem(word, UNSIGNED, pc);
-        //std::cout << "Current Instruction: " <<std::hex<< CurrentInstr << std::endl;
-    }
 
 
     void StoreMem(uint32_t location, int bytes, uint32_t regst)
@@ -98,12 +93,17 @@ void Print(int mode)
         {
             MemorySpace[location+i]=regst>>(8*i); 
         }
-        Fetch();
+        //Fetch();
         
 
     }
 
+    void Fetch()
+    {
 
+        CurrentInstr = ReadMem(word, UNSIGNED, pc);
+        //std::cout << "Current Instruction: " <<std::hex<< CurrentInstr << std::endl;
+    }
 
     void Decode()
     {
@@ -268,32 +268,32 @@ void Print(int mode)
                 {
                     case 0b000: if (x[rs1] == x[rs2])                                           // beq
                                 {
-                                    BranchTaken = 1;
+                                    BranchTaken = true;
                                     pc += imm;
                                 }   break;                                                        
                     case 0b001: if (x[rs1] != x[rs2])                                           // bne
                                 {
-                                    BranchTaken = 1;
+                                    BranchTaken = true;
                                     pc += imm; 
                                 }   break;                                                        
                     case 0b100: if ((uint32_t)x[rs1] < (uint32_t)x[rs2])                        // blt
                                 {   
-                                    BranchTaken = 1;
+                                    BranchTaken = true;
                                     pc += imm; 
                                 }   break;                                                            
                     case 0b101: if ((uint32_t)x[rs1] >= (uint32_t)x[rs2])                       // bge
                                 {
-                                   BranchTaken = 1;
+                                   BranchTaken = true;
                                    pc += imm; 
                                 }  break;                         
                     case 0b110: if (x[rs1] < x[rs2])                                            // bltu
                                 {
-                                    BranchTaken = 1;
+                                    BranchTaken = true;
                                     pc += imm;    
                                 }   break;
                     case 0b111: if (x[rs1] >=x[rs2])                                            // bgeu
                                 {
-                                    BranchTaken = 1;
+                                    BranchTaken = true;
                                     pc += imm; 
                                 }   break;     
                 } break;
@@ -402,12 +402,12 @@ void Print(int mode)
         while(true)
         {
             Fetch();
-            Decode();
-            if(CurrentInstr == 0)
+            if(CurrentInstr == 0 || CurrentInstr == 0x00008067)
             {
                 Print(mode);
                 break;
             }
+            Decode();
             Execute();
 
             if(!BranchTaken)
@@ -415,7 +415,7 @@ void Print(int mode)
                 pc = pc + 4;
 
             }
-            BranchTaken = 0;
+            BranchTaken = false;
 
 
         }
