@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <cstdint>
 #include <fstream>
 #include <sstream>
@@ -27,35 +28,43 @@ uint32_t imm;
 uint32_t pc;
 
 
-
-
-
-void Print(int mode)
+    void Print(int mode)
     {
-            if(mode==Verbose)
+        static const char* regNames[32] = {
+            "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+            "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+            "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+            "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
+        };
+
+        std::cout << "---------------------------------------------" << std::endl;
+
+        if (mode == Verbose)
+        {
+            std::cout << "Current Instruction : " << std::hex << CurrentInstr << std::endl;
+            std::cout << "---------------------------------------------" << std::endl;
+
+            for (int i = 0; i < 32; i++)
             {
-                std::cout<<"Current Instruction : "<<std::hex<<CurrentInstr<<std::endl;
-                for(int i=0; i<32;i++)
-                {  
-                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<std::endl; 
-
-                }
-
+                std::cout << std::dec << "x[" << std::setw(2) << std::left << i << "] (" 
+                        << std::setw(4) << std::left << regNames[i] << ") = " 
+                        << std::hex << x[i] << std::endl;
             }
+        }
+        else
+        {
+            std::cout << "Current Instruction : " << std::hex << pc << std::endl;
+            std::cout << "---------------------------------------------" << std::endl;
 
-            else 
+            for (int i = 0; i < 32; i++)
             {
-                std::cout<<"Current Instruction : "<<std::hex<<pc<<std::endl;
-                for(int i=0; i<32;i++)
-                {
-                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<std::endl; 
-
-                }
-    
+                std::cout << std::dec << "x[" << std::setw(2) << std::left << i << "] (" 
+                        << std::setw(4) << std::left << regNames[i] << ") = " 
+                        << std::hex << x[i] << std::endl;
             }
+        }
 
     }
-
 
 
 
