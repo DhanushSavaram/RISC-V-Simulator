@@ -31,30 +31,43 @@ uint32_t pc;
 
 
 void Print(int mode)
+{
+    static const char* regNames[32] = {
+        "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+        "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+        "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+        "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
+    };
+
+    std::cout << "---------------------------------------------" << std::endl;
+
+    if (mode == Verbose)
     {
-            if(mode==Verbose)
-            {
-                std::cout<<"Current Instruction : "<<std::hex<<CurrentInstr<<std::endl;
-                for(int i=0; i<32;i++)
-                {  
-                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<std::endl; 
+        std::cout << "Current Instruction : 0x" << std::hex << CurrentInstr << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
 
-                }
-
-            }
-
-            else 
-            {
-                std::cout<<"Current Instruction : "<<std::hex<<pc<<std::endl;
-                for(int i=0; i<32;i++)
-                {
-                    std::cout<<std::dec<<"x["<<i<<"] = "<<std::hex<<x[i]<<std::endl; 
-
-                }
-    
-            }
-
+        for (int i = 0; i < 32; i++)
+        {
+            std::cout << std::dec << "x[" << i << "] (" 
+                      << regNames[i] << ") = 0x" 
+                      << std::hex << x[i] << std::endl;
+        }
     }
+    else
+    {
+        std::cout << "Current Instruction : 0x" << std::hex << pc << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+
+        for (int i = 0; i < 32; i++)
+        {
+            std::cout << std::dec << "x[" << i << "] (" 
+                      << regNames[i] << ") =0x" 
+                      << std::hex << x[i] << std::endl;
+        }
+    }
+
+}
+
 
 
 
@@ -206,113 +219,113 @@ void Print(int mode)
         switch(opcode)
         {
             case R: 
-                switch(funct3)
-                {
-                    case 0b000:
-                        switch(funct7)
-                        {
-                            case 0b0000000:  x[rd] = x[rs1] + x[rs2]; break;                   // add
-                            case 0b0100000:  x[rd] = x[rs1] - x[rs2]; break;                   // sub
-                        }
-                        break;
-                    case 0b001:  x[rd] = x[rs1] << x[rs2]; break;                              // sll
-                    case 0b010:  x[rd] = (x[rs1] < x[rs2]) ? 1 : 0; break;                     // slt
-                    case 0b011:  x[rd] = (uint32_t)x[rs1] < (uint32_t)x[rs2] ? 1 : 0; break;   // sltu
-                    case 0b100:  x[rd] = x[rs1] ^ x[rs2]; break;                               // xor
-                        switch(funct7)
-                        {
-                            case 0b0000000:  x[rd] = x[rs1] >> x[rs2]; break;                  // srl
-                            case 0b0100000:  x[rd] = (int32_t)x[rs1] >> x[rs2]; break;         // sra
-                        }
-                        break;
-                    case 0b110:  x[rd] = x[rs1] | x[rs2]; break;                               // or
-                    case 0b111:  x[rd] = x[rs1] & x[rs2]; break;                               // and
-                }
-                break;
+                    switch(funct3)
+                    {
+                        case 0b000:
+                                    switch(funct7)
+                                    {
+                                        case 0b0000000:  x[rd] = x[rs1] + x[rs2]; break;                   // add
+                                        case 0b0100000:  x[rd] = x[rs1] - x[rs2]; break;                   // sub
+                                    }
+                                    break;
+                        case 0b001: x[rd] = x[rs1] << x[rs2]; break;                              // sll
+                        case 0b010: x[rd] = (x[rs1] < x[rs2]) ? 1 : 0; break;                     // slt
+                        case 0b011: x[rd] = (uint32_t)x[rs1] < (uint32_t)x[rs2] ? 1 : 0; break;   // sltu
+                        case 0b100: x[rd] = x[rs1] ^ x[rs2]; break;                               // xor
+                                    switch(funct7)
+                                    {
+                                        case 0b0000000:  x[rd] = x[rs1] >> x[rs2]; break;                  // srl
+                                        case 0b0100000:  x[rd] = (int32_t)x[rs1] >> x[rs2]; break;         // sra
+                                    }
+                                    break;
+                        case 0b110: x[rd] = x[rs1] | x[rs2]; break;                               // or
+                        case 0b111: x[rd] = x[rs1] & x[rs2]; break;                               // and
+                    }
+                    break;
             
             case I:
-                switch(funct3)
-                {
+                    switch(funct3)
+                    {
 
-                    case 0b000: x[rd] = x[rs1] + imm                                          ;// addi
+                        case 0b000: x[rd] = x[rs1] + imm ; break;                                  // addi
 
-                                break;                                   
-                    case 0b010: x[rd] = (x[rs1] < imm) ? 1 : 0; break;                         // slti
-                    case 0b011: x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;       // sltiu
-                    case 0b100: x[rd] = x[rs1] ^ imm; break;                                   // xori
-                    case 0b110: x[rd] = x[rs1] | imm; break;                                   // ori
-                    case 0b111: x[rd] = x[rs1] & imm; break;                                   // andi
-                    case 0b001: x[rd] = x[rs1] << (imm & 0x1F); break;                         // slli
-                    case 0b101:
-                        switch(funct7)
-                        {
-                            case 0b0000000: x[rd] = x[rs1] >> (imm & 0x1F); break;             // srli
-                            case 0b0100000: x[rd] = (int32_t)x[rs1] >> (imm & 0x1F); break;    // srai
-                        }
-                        break;
-                    //case 0b000: x[rd] = pc + 4; pc = x[rs1] + imm; break;                    // jalr
-                }
-                break;
+                                                                      
+                        case 0b010: x[rd] = (x[rs1] < imm) ? 1 : 0; break;                         // slti
+                        case 0b011: x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;       // sltiu
+                        case 0b100: x[rd] = x[rs1] ^ imm; break;                                   // xori
+                        case 0b110: x[rd] = x[rs1] | imm; break;                                   // ori
+                        case 0b111: x[rd] = x[rs1] & imm; break;                                   // andi
+                        case 0b001: x[rd] = x[rs1] << (imm & 0x1F); break;                         // slli
+                        case 0b101:
+                                    switch(funct7)
+                                    {
+                                        case 0b0000000: x[rd] = x[rs1] >> (imm & 0x1F); break;             // srli
+                                        case 0b0100000: x[rd] = (int32_t)x[rs1] >> (imm & 0x1F); break;    // srai
+                                    }
+                                    break;
+                        //case 0b000: x[rd] = pc + 4; pc = x[rs1] + imm; break;                    // jalr
+                    }
+                    break;
             
             case S:
-                switch(funct3)
-                {
-                    case 0b000: StoreMem(x[rs1]+imm, byte, x[rs2]); break;                  // sb
-                    case 0b001: StoreMem(x[rs1]+imm, halfword, x[rs2]); break;              // sh
-                    case 0b010: StoreMem(x[rs1]+imm, word, x[rs2]); break;                  // sw
-                }   
-                break;
+                    switch(funct3)
+                    {
+                        case 0b000: StoreMem(x[rs1]+imm, byte, x[rs2]); break;                  // sb
+                        case 0b001: StoreMem(x[rs1]+imm, halfword, x[rs2]); break;              // sh
+                        case 0b010: StoreMem(x[rs1]+imm, word, x[rs2]); break;                  // sw
+                    }   
+                    break;
             
             case B:
-                switch(funct3)
-                {
-                    case 0b000: if (x[rs1] == x[rs2])                                           // beq
-                                {
-                                    BranchTaken = true;
-                                    pc += imm;
-                                }   break;                                                        
-                    case 0b001: if (x[rs1] != x[rs2])                                           // bne
-                                {
-                                    BranchTaken = true;
-                                    pc += imm; 
-                                }   break;                                                        
-                    case 0b100: if ((uint32_t)x[rs1] < (uint32_t)x[rs2])                        // blt
-                                {   
-                                    BranchTaken = true;
-                                    pc += imm; 
-                                }   break;                                                            
-                    case 0b101: if ((uint32_t)x[rs1] >= (uint32_t)x[rs2])                       // bge
-                                {
-                                   BranchTaken = true;
-                                   pc += imm; 
-                                }  break;                         
-                    case 0b110: if (x[rs1] < x[rs2])                                            // bltu
-                                {
-                                    BranchTaken = true;
-                                    pc += imm;    
-                                }   break;
-                    case 0b111: if (x[rs1] >=x[rs2])                                            // bgeu
-                                {
-                                    BranchTaken = true;
-                                    pc += imm; 
-                                }   break;     
-                } break;
+                    switch(funct3)
+                    {
+                        case 0b000: if (x[rs1] == x[rs2])                                           // beq
+                                    {
+                                        BranchTaken = true;
+                                        pc += imm;
+                                    }   break;                                                        
+                        case 0b001: if (x[rs1] != x[rs2])                                           // bne
+                                    {
+                                        BranchTaken = true;
+                                        pc += imm; 
+                                    }   break;                                                        
+                        case 0b100: if ((int32_t)x[rs1] < (int32_t)x[rs2])                          // blt
+                                    {   
+                                        BranchTaken = true;
+                                        pc += imm; 
+                                    }   break;                                                            
+                        case 0b101: if ((int32_t)x[rs1] >= (int32_t)x[rs2])                         // bge
+                                    {
+                                        BranchTaken = true;
+                                        pc += imm; 
+                                    }   break;                         
+                        case 0b110: if (x[rs1] < x[rs2])                                            // bltu
+                                    {
+                                        BranchTaken = true;
+                                        pc += imm;    
+                                    }   break;
+                        case 0b111: if (x[rs1] >=x[rs2])                                            // bgeu
+                                    {
+                                        BranchTaken = true;
+                                        pc += imm; 
+                                    }   break;     
+                    } break;
             
-            case U_LUI   : x[rd] = imm; break; 
-            case U_AUIPC : x[rd] = pc + imm; break;
+            case U_LUI   :  x[rd] = imm; break; 
+            case U_AUIPC :  x[rd] = pc + imm; break;
 
             
-            case J: break;
+            case J: ;
             case I_LOADS: 
-                switch(funct3)
-                        { 
-                            case 0b000: x[rd] = ReadMem(byte, SIGNED, imm + x[rs1]); break;       // Load Byte
-                            case 0b001: x[rd] = ReadMem(halfword, SIGNED,imm +  x[rs1]); break;   // Load Halfword  
-                            case 0b010: x[rd] = ReadMem(word, UNSIGNED, imm +  x[rs1]); break;    // Load Word
-                            case 0b100: x[rd] = ReadMem(byte, UNSIGNED, imm + x[rs1] ); break;    // Load Byte Unsigned
-                            case 0b101: x[rd] = ReadMem(halfword, UNSIGNED, imm + x[rs1]);break;  // Load Halfword Unsigned
-                        } break;
-                }
+                            switch(funct3)
+                                    { 
+                                        case 0b000: x[rd] = ReadMem(byte, SIGNED, imm + x[rs1]); break;       // Load Byte
+                                        case 0b001: x[rd] = ReadMem(halfword, SIGNED,imm +  x[rs1]); break;   // Load Halfword  
+                                        case 0b010: x[rd] = ReadMem(word, UNSIGNED, imm +  x[rs1]); break;    // Load Word
+                                        case 0b100: x[rd] = ReadMem(byte, UNSIGNED, imm + x[rs1] ); break;    // Load Byte Unsigned
+                                        case 0b101: x[rd] = ReadMem(halfword, UNSIGNED, imm + x[rs1]);break;  // Load Halfword Unsigned
+                                    } break;
+                            }
                 x[0]=0;
                 Print(mode);
 
@@ -401,6 +414,7 @@ void Print(int mode)
 
         while(true)
         {
+            std::cout<<"Program Counter : "<<std::dec<<pc<<std::endl;
             Fetch();
             if(CurrentInstr == 0 || CurrentInstr == 0x00008067)
             {
