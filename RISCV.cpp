@@ -1,5 +1,4 @@
 #include <iostream>
-#include <iomanip>
 #include <cstdint>
 #include <fstream>
 #include <sstream>
@@ -41,57 +40,49 @@ uint32_t pc;
 
         if (mode == Verbose)
         {
-            std::cout << "Current Instruction : " << std::hex << CurrentInstr << std::endl;
+            std::cout << "Current Instruction : 0x" << std::hex << CurrentInstr << std::endl;
             std::cout << "---------------------------------------------" << std::endl;
 
             for (int i = 0; i < 32; i++)
             {
-                std::cout << std::dec << "x[" << std::setw(2) << std::left << i << "] (" 
-                        << std::setw(4) << std::left << regNames[i] << ") = " 
-                        << std::hex << x[i] << std::endl;
+                std::cout << std::dec << "x[" << i << "] (" 
+                          << regNames[i] << ") = 0x" 
+                          << std::hex << x[i] << std::endl;
             }
         }
         else
         {
-            std::cout << "Current Instruction : " << std::hex << pc << std::endl;
+            std::cout << "Current Instruction : 0x" << std::hex << pc << std::endl;
             std::cout << "---------------------------------------------" << std::endl;
 
             for (int i = 0; i < 32; i++)
             {
-                std::cout << std::dec << "x[" << std::setw(2) << std::left << i << "] (" 
-                        << std::setw(4) << std::left << regNames[i] << ") = " 
-                        << std::hex << x[i] << std::endl;
+                std::cout << std::dec << "x[" << i << "] (" 
+                          << regNames[i] << ") =0x" 
+                          << std::hex << x[i] << std::endl;
             }
         }
 
     }
 
-
-
     int ReadMem(int datatype, int sign, uint32_t location)
     {
 
-        int mem;
+        int mem = MemorySpace[location];
+
         if ((datatype == byte) && (sign))
-          mem = MemorySpace[location] >> 7 ? MemorySpace[location] | (0xffffff00) : MemorySpace[location];
+          mem =  mem >> 7 ? MemorySpace[location] | (0xffffff00) : mem;
 
-        else if(datatype == byte)
-          mem = MemorySpace[location];
-
-        else if ((datatype == halfword) && (sign))  
-          mem= (MemorySpace[location + 1]>>7) ?  (MemorySpace[location]|(MemorySpace[location+1]<<8)|(0xffff0000)) : (MemorySpace[location]|(MemorySpace[location+1]<<8));
-
-        else if (datatype == halfword ) 
-          mem= (MemorySpace[location]|(MemorySpace[location+1]<<8));
+        else if ((datatype == halfword) && (sign))  {
+          mem = MemorySpace[location]|MemorySpace[location+1]<<8;
+          mem = (MemorySpace[location + 1]>>7) ?  mem |(0xffff0000) : mem;
+        }
 
         else if (datatype == word)
           mem = MemorySpace[location] | MemorySpace[location+1]<<8 | MemorySpace[location+2]<<16 | MemorySpace[location+3]<<24;
-        // std::cout << "MEM: " <<std::hex<< mem << std::endl;
 
         return mem; 
-
     }
-
 
 
 
