@@ -7,7 +7,7 @@ RV32LD = $(RISCV)/bin/riscv32-unknown-elf-ld
 # Compilation flags
 ASFLAGS = -ahld
 
-# Default file, can be overridden via command line (e.g., `make FILE=my_program all`)
+# Default file, can be overridden via command line (e.g., make FILE=my_program all)
 FILE ?= test_add
 
 # C++ Compiler and flags
