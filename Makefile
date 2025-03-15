@@ -23,7 +23,7 @@ all: clean assemble $(OUT)  # Clean before building
 assemble: $(FILE).o $(FILE).dis $(FILE).mem
 
 $(FILE).o: $(FILE).s
-	$(RV32AS) $(ASFLAGS) $< -o $@ > prog.lst
+	$(RV32AS) $(ASFLAGS) $< -o $@ 
 
 $(FILE).dis: $(FILE).o
 	$(RV32OBJDUMP) -d $< > $@
