@@ -7,8 +7,8 @@
 #define UNSIGNED 0
 #define SIGNED 1
 
-#define StartAddress 0 
-#define StackAddress 1<<16 
+#define StartAddress 0
+#define StackAddress 1<<16
 
 uint8_t MemorySpace[1 << 16] = {};
 uint32_t x[32] = {};
@@ -46,8 +46,8 @@ void Print()
 
         for (int i = 0; i < 32; i++)
         {
-            std::cout << std::dec << "x[" << i << "] (" 
-                      << regNames[i] << ") = 0x" 
+            std::cout << std::dec << "x[" << i << "] ("
+                      << regNames[i] << ") = 0x"
                       << std::hex << x[i] << std::endl;
         }
             std::cout << "---------------------------------------------" << std::endl;
@@ -72,13 +72,13 @@ void Print()
         else if ((datatype == halfword) && (sign))  
           mem= (MemorySpace[location + 1]>>7) ?  (MemorySpace[location]|(MemorySpace[location+1]<<8)|(0xffff0000)) : (MemorySpace[location]|(MemorySpace[location+1]<<8));
 
-        else if (datatype == halfword ) 
+        else if (datatype == halfword )
           mem= (MemorySpace[location]|(MemorySpace[location+1]<<8));
 
         else if (datatype == word)
           mem = MemorySpace[location] | MemorySpace[location+1]<<8 | MemorySpace[location+2]<<16 | MemorySpace[location+3]<<24;
 
-        return mem; 
+        return mem;
 
     }
 
@@ -89,9 +89,9 @@ void Print()
     {
         for(int i=0;i<bytes;i++)
         {
-            MemorySpace[location+i]=regst>>(8*i); 
+            MemorySpace[location+i]=regst>>(8*i);
         }
-        
+       
 
     }
 
@@ -104,19 +104,29 @@ void Print()
     {
 
         opcode = CurrentInstr & 0x7f;
-        rd = (CurrentInstr >> 7) & 0x1f;
-        funct3 = (CurrentInstr >> 12) & 0x7;
-        rs1 = (CurrentInstr >> 15) & 0x1f;
-        rs2 = (CurrentInstr >> 20) & 0x1f;
-        funct7 = CurrentInstr >> 25;
+       
+        if(opcode == R)
+        {
+            rd = (CurrentInstr >> 7) & 0x1f;
+            funct3 = (CurrentInstr >> 12) & 0x7;
+            rs1 = (CurrentInstr >> 15) & 0x1f;
+            rs2 = (CurrentInstr >> 20) & 0x1f;
+            funct7 = CurrentInstr >> 25;
 
-        if ((opcode == I) || (opcode == I_LOADS) || (opcode == ECALL) || (opcode == I_JALR))
+
+        }
+
+        else if ((opcode == I) || (opcode == I_LOADS) || (opcode == ECALL) || (opcode == I_JALR))
         {
 
+        rd = (CurrentInstr >> 7) & 0x1F;    
+        funct3 = (CurrentInstr >> 12) & 0x7;  
+        rs1 = (CurrentInstr >> 15) & 0x1F;    
+
         imm = (CurrentInstr >> 20) & 0xFFF;    
-        if (imm & 0x800) 
+        if (imm & 0x800)
         {  
-            imm |= 0xFFFFF000; 
+            imm |= 0xFFFFF000;
         }
 
         }
@@ -124,6 +134,9 @@ void Print()
         else if(opcode == S)
         {
 
+            funct3 = (CurrentInstr>>12) & 0x7;
+            rs1 = (CurrentInstr>>15) & 0x1f;
+            rs2 = (CurrentInstr>>20) & 0x1f;
             imm = (CurrentInstr>>7 & 0x1f) | (( CurrentInstr >> 25 & 0x7f) <<5);
             imm = (imm>>11) ? imm | 0xfffff000 : imm;
         }
@@ -131,23 +144,29 @@ void Print()
         else if (opcode == B)
         {
         imm = ((CurrentInstr >> 31) & 0x1) << 12 | ((CurrentInstr >> 7) & 0x1) << 11 |  ((CurrentInstr >> 25) & 0x3F) << 5 | ((CurrentInstr >> 8) & 0xF) << 1;
-        if (imm & 0x1000) 
+        rs1 = (CurrentInstr >> 15) & 0x1F;    
+        rs2 = (CurrentInstr >> 20) & 0x1F;
+        funct3 = (CurrentInstr >> 12) & 0x7;
+        if (imm & 0x1000)
         {
-            imm |= 0xFFFFE000; 
+            imm |= 0xFFFFE000;
         }
         }
 
         else if (opcode == U_LUI || opcode == U_AUIPC )
         {
+        rd = (CurrentInstr >> 7) & 0x1F;
         imm = CurrentInstr & 0xFFFFF000;
 
         }
 
-        else if(opcode == J ) 
+        else if(opcode == J )
         {
 
+        rd = (CurrentInstr >> 7) & 0x1F;
         imm = ((CurrentInstr >> 31) & 0x1) << 20 | ((CurrentInstr >> 21) & 0x3FF) << 1 | ((CurrentInstr >> 20) & 0x1) << 11 | ((CurrentInstr >> 12) & 0xFF) << 12;
         imm = (imm>>19) ? (imm | 0xFFF00000) : imm;
+
 
         }
         if(debug)
@@ -168,60 +187,61 @@ void Print()
     {
         switch(opcode)
         {
-            case R: 
+            case R:
                     switch(funct3)
                     {
                         case 0b000:
                                     switch(funct7)
                                     {
-                                        case 0b0000000:  if(debug) std::cout<<"ADD Detected"<<std::endl;   
-                                                         x[rd] = x[rs1] + x[rs2]; break;                   
+                                        case 0b0000000:  if(debug) std::cout<<"ADD Detected"<<std::endl;  
+                                                         x[rd] = x[rs1] + x[rs2]; break;                  
                                         case 0b0100000:  if(debug) std::cout<<"SUB Detected"<<std::endl;
-                                                         x[rd] = x[rs1] - x[rs2]; break;                   
+                                                         x[rd] = x[rs1] - x[rs2]; break;                  
                                     }
                                     break;
                         case 0b001: if(debug) std::cout<<"Shift Left Detected"<<std::endl;
-                                    x[rd] = x[rs1] << x[rs2]; break;                             
+                                    x[rd] = x[rs1] << x[rs2]; break;                            
 
                         case 0b010: if(debug) std::cout<<"Shift Less Than Detected"<<std::endl;
                                     x[rd] = (x[rs1] < x[rs2]) ? 1 : 0; break;                    
 
                         case 0b011: if(debug) std::cout<<"Shift Less Than Unsigned Detected"<<std::endl;
-                                    x[rd] = (uint32_t)x[rs1] < (uint32_t)x[rs2] ? 1 : 0; break;   
+                                    x[rd] = (uint32_t)x[rs1] < (uint32_t)x[rs2] ? 1 : 0; break;  
 
                         case 0b100: if(debug) std::cout<<"XOR Detected"<<std::endl;
-                                    x[rd] = x[rs1] ^ x[rs2]; break;                               
+                                    x[rd] = x[rs1] ^ x[rs2]; break;                              
 
                                     switch(funct7)
                                     {
                                         case 0b0000000:  if(debug) std::cout<<"Shift Right Detected"<<std::endl;
-                                                         x[rd] = x[rs1] >> x[rs2]; break;             
+                                                         x[rd] = x[rs1] >> x[rs2]; break;            
                                         case 0b0100000:  if(debug) std::cout<<"Shift Right Arithmetic Detected"<<std::endl;
-                                                         x[rd] = (int32_t)x[rs1] >> x[rs2]; break;         
+                                                         x[rd] = (int32_t)x[rs1] >> x[rs2]; break;        
                                     }
                                     break;
                         case 0b110: if(debug) std::cout<<"OR Detected"<<std::endl;
-                                    x[rd] = x[rs1] | x[rs2]; break;                               
+                                    x[rd] = x[rs1] | x[rs2]; break;                              
                         case 0b111: if(debug) std::cout<<"AND Detected"<<std::endl;
-                                    x[rd] = x[rs1] & x[rs2]; break;                           
+                                    x[rd] = x[rs1] & x[rs2]; break;                          
                     }
                     break;
-            
+           
             case I:
                     switch(funct3)
                     {
 
                         case 0b000: if(debug) std::cout<<"ADDI Detected"<<std::endl;
                                     x[rd] = x[rs1] + imm ; break;                                  
-                                                                      
+
+                                                                     
                         case 0b010: if(debug) std::cout<<"Set Less Than Immediate Detected"<<std::endl;
-                                    x[rd] = ((int32_t)x[rs1] < (int32_t)imm)? 1 : 0;
+                                    x[rd] = ((int32_t)x[rs1] < (int32_t)imm) ? 1 : 0; break;                                  
 
                         case 0b011: if(debug) std::cout<<"Set Less Than Unsigned Immediate Detected"<<std::endl;
                                     x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;                        
 
                         case 0b100: if(debug) std::cout<<"XORI Detected"<<std::endl;
-                                    x[rd] = x[rs1] ^ imm; break;                                   
+                                    x[rd] = x[rs1] ^ imm; break;                                  
 
                         case 0b110: if(debug) std::cout<<"ORI Detected"<<std::endl;
                                     x[rd] = x[rs1] | imm; break;                                
@@ -236,7 +256,7 @@ void Print()
                                     switch(funct7)
                                     {
                                         case 0b0000000: if(debug) std::cout<<"SRLI Detected"<<std::endl;
-                                                        x[rd] = x[rs1] >> (imm & 0x1F); break;             
+                                                        x[rd] = x[rs1] >> (imm & 0x1F); break;            
 
                                         case 0b0100000: if(debug) std::cout<<"SRAI Detected"<<std::endl;
                                                         x[rd] = (int32_t)x[rs1] >> (imm & 0x1F); break;  
@@ -249,25 +269,25 @@ void Print()
                           pc = (x[rs1] + imm) & 0xFFFFFFFE;
                           BranchTaken = true;
                           break;
-            // case ECALL  : if(debug) std::cout<<"ECALL Detected"<<std::endl; 
+            // case ECALL  : if(debug) std::cout<<"ECALL Detected"<<std::endl;
             //                 switch(x[17])
             //                 {
             //                     case 63:   {
-            //                         int fdr = x[10]; 
-            //                         uint32_t addrr = x[11]; 
+            //                         int fdr = x[10];
+            //                         uint32_t addrr = x[11];
             //                         int sizer = x[12];
-            //                         if (fdr == 0) 
-            //                         { 
+            //                         if (fdr == 0)
+            //                         {
             //                             std::cin.read(&MemorySpace[addrr], sizer);
             //                         }
-            //                         x[10] = std::cin.gcount(); 
+            //                         x[10] = std::cin.gcount();
             //                         break;}
             //                     case 64: {
-            //                         int fdw = x[10]; 
-            //                         uint32_t addrw = x[11]; 
+            //                         int fdw = x[10];
+            //                         uint32_t addrw = x[11];
             //                         int sizew = x[12];
-            //                         if (fdw == 1) 
-            //                         { 
+            //                         if (fdw == 1)
+            //                         {
             //                             std::cout.write(&MemorySpace[addrw], sizew)<<std::endl;
             //                             std::cout.flush();
             //                         }
@@ -275,13 +295,13 @@ void Print()
             //                         break;}
             //                     } break;
 
-                
-            
+               
+           
             case S:
                     switch(funct3)
                     {
                         case 0b000: if(debug) std::cout<<"Store Byte detected"<<std::endl;
-                                    StoreMem(x[rs1]+imm, byte, x[rs2]); break;               
+                                    StoreMem(x[rs1]+imm, byte, x[rs2]); break;              
 
                         case 0b001: if(debug) std::cout<<"Store Half Word detected"<<std::endl;
                                     StoreMem(x[rs1]+imm, halfword, x[rs2]); break;              
@@ -289,40 +309,40 @@ void Print()
                         case 0b010: if(debug)std::cout<<"Store Word detected"<<std::endl;
                                     StoreMem(x[rs1]+imm, word, x[rs2]);   break ;              
 
-                    }   
+                    }  
                     break;
-            
+           
             case B:
                     switch(funct3)
                     {
                         case 0b000: if(debug) std::cout<<"BEQ detected"<<std::endl;
-                                    if (x[rs1] == x[rs2])                                       
-                                    { 
+                                    if (x[rs1] == x[rs2])                                      
+                                    {
                                         BranchTaken = true;
                                         pc += imm;
                                     }   break;                                                        
                         case 0b001: if(debug) std::cout<<"BNE detected"<<std::endl;
-                                    if (x[rs1] != x[rs2])                                       
+                                    if (x[rs1] != x[rs2])                                      
                                     {
                                         BranchTaken = true;
-                                        pc += imm; 
+                                        pc += imm;
                                     }   break;                                                        
                         case 0b100: if(debug) std::cout<<"BLT detected"<<std::endl;
-                                    if ((int32_t)x[rs1] < (int32_t)x[rs2])                     
-                                    {   
+                                    if ((int32_t)x[rs1] < (int32_t)x[rs2])                    
+                                    {  
                                         BranchTaken = true;
-                                        pc += imm; 
+                                        pc += imm;
                                     }   break;                                                            
                         case 0b101: if(debug) std::cout<<"BGE detected"<<std::endl;
 
-                                    if ((int32_t)x[rs1] >= (int32_t)x[rs2])                 
+                                    if ((int32_t)x[rs1] >= (int32_t)x[rs2])                
                                     {
                                         BranchTaken = true;
-                                        pc += imm; 
-                                    }   break;                         
+                                        pc += imm;
+                                    }   break;                        
                         case 0b110: if(debug) std::cout<<"BLTU detected"<<std::endl;
-                                    if (x[rs1] < x[rs2])                                         
-                                    {                       
+                                    if (x[rs1] < x[rs2])                                        
+                                    {                      
                                         BranchTaken = true;
                                         pc += imm;    
                                     }   break;
@@ -330,98 +350,44 @@ void Print()
                                     if (x[rs1] >=x[rs2])                                      
                                     {
                                         BranchTaken = true;
-                                        pc += imm; 
-                                    }   break;     
+                                        pc += imm;
+                                    }   break;    
                     } break;
-            
+           
             case U_LUI   :  if(debug) std::cout<<" LUI Detected "<<std::endl;
-                            x[rd] = imm; break; 
+                            x[rd] = imm; break;
 
             case U_AUIPC :  if(debug) std::cout<<" AUIPC Detected "<<std::endl;
                             x[rd] = pc + imm; break;
 
-            
+           
             case J       :  if(debug) std::cout<<" JAL Detected "<<std::endl;
-                            x[rd] = pc + 4; 
-                            pc = pc + imm; 
+                            x[rd] = pc + 4;
+                            pc = pc + imm;
                             BranchTaken = true;
                             break;
-                            
-            case I_LOADS : 
+                           
+            case I_LOADS :
                             switch(funct3)
-                                    { 
+                                    {
                                         case 0b000: if(debug) std::cout<<"Load Byte Detected"<<std::endl;
                                                     x[rd] = ReadMem(byte, SIGNED, imm + x[rs1]); break;
 
                                         case 0b001: if(debug) std::cout<<"Load Half Word Detected"<<std::endl;
-                                                    x[rd] = ReadMem(halfword, SIGNED,imm +  x[rs1]); break;   
+                                                    x[rd] = ReadMem(halfword, SIGNED,imm +  x[rs1]); break;  
 
-                                        case 0b010: if(debug) std::cout<<"Load Word Detected"<<std::endl; 
-                                                    x[rd] = ReadMem(word, UNSIGNED, imm +  x[rs1]); break;   
+                                        case 0b010: if(debug) std::cout<<"Load Word Detected"<<std::endl;
+                                                    x[rd] = ReadMem(word, UNSIGNED, imm +  x[rs1]); break;  
 
                                         case 0b100: if(debug) std::cout<<"Load Byte Unsigned Detected"<<std::endl;
                                                     x[rd] = ReadMem(byte, UNSIGNED, imm + x[rs1] ); break;    
 
                                         case 0b101: if(debug) std::cout<<"Load HalfWord Unsigned Detected"<<std::endl;
-                                                    x[rd] = ReadMem(halfword, UNSIGNED, imm + x[rs1]);break; 
+                                                    x[rd] = ReadMem(halfword, UNSIGNED, imm + x[rs1]);break;
                                     } break;
                             }
-
-
-
-            // case 0x07: // FLW
-            //             if((x[rs1] + imm) % 4 == 0) 
-            //             {
-            //                 f[rd] = ReadFloatMem(x[rs1] + imm);
-            //             } else 
-            //             {
-            //                 x[1] = 0; // Misaligned address
-            //                 pc = -4; // Halt execution
-            //             }
-            //             break;
-                            
-            // case 0x27: // FSW
-            //             if((x[rs1] + imm) % 4 == 0) 
-            //             {
-            //                 StoreMem(x[rs1] + imm, word, rs2, true);
-            //             } else 
-            //             {
-            //                 x[1] = 0; // Misaligned address
-            //                 pc = -4; 
-            //             }
-            //             break;
-                            
-            // case 0x53: { // FP Arithmetic
-            //     uint8_t fmt = (funct7 >> 5) & 0x3;
-            //     uint8_t ftype = (funct7 << 3) | funct3;
-                
-            //     if(fmt == 0x0) { // Single precision
-            //         switch(ftype) {
-            //             case 0x00: f[rd] = f[rs1] + f[rs2]; break;  // FADD.S
-            //             case 0x04: f[rd] = f[rs1] - f[rs2]; break;  // FSUB.S
-            //             case 0x08: f[rd] = f[rs1] * f[rs2]; break;  // FMUL.S
-            //             case 0x0C: f[rd] = f[rs1] / f[rs2]; break;  // FDIV.S
-            //             case 0x2C: f[rd] = sqrtf(f[rs1]); break;    // FSQRT.S
-                        
-            //             case 0x50: x[rd] = (f[rs1] == f[rs2]); break; // FEQ.S
-            //             case 0x51: x[rd] = (f[rs1] < f[rs2]); break;  // FLT.S
-            //             case 0x52: x[rd] = (f[rs1] <= f[rs2]); break; // FLE.S
-                        
-            //             case 0x60: x[rd] = (int32_t)f[rs1]; break;   // FCVT.W.S
-            //             case 0x61: x[rd] = (uint32_t)f[rs1]; break;  // FCVT.WU.S
-            //             case 0x68: f[rd] = (int32_t)x[rs1]; break;   // FCVT.S.W
-            //             case 0x69: f[rd] = (uint32_t)x[rs1]; break;  // FCVT.S.WU
-                        
-            //             case 0x10: // FSGNJ.S
-            //                 memcpy(&f[rd], &f[rs1], sizeof(float));
-            //                 ((uint32_t*)&f[rd])[0] ^= 
-            //                     (((uint32_t*)&f[rs2])[0] & 0x80000000);
-            //                 break;
-            //         }
-            //     }
-            //     break;
                 x[0]=0;
-                
+               
                 if(mode == Verbose) Print();
 
 
@@ -431,7 +397,7 @@ void Print()
 
 
 
-    int main(int argc, char* argv[]) 
+    int main(int argc, char* argv[])
     {
         int ProgramSize = 0;
         pc = StartAddress;
@@ -472,21 +438,21 @@ void Print()
         }
 
         std::ifstream file(MemoryImage);
-        if (!file) 
+        if (!file)
         {
             std::cerr << "Error: Could not open file!" << std::endl;
             return 0;
         }
 
         std::string line;
-        while (std::getline(file, line)) 
+        while (std::getline(file, line))
         {
             std::istringstream stream(line);
             uint32_t address, value;
             char colon;
             std::string data;
 
-            if (stream >> std::hex >> address >> colon >> data) 
+            if (stream >> std::hex >> address >> colon >> data)
             {
                 if(debug)
                 {
@@ -495,7 +461,7 @@ void Print()
                 }
 
                 sscanf(data.c_str(), "%x", &value);
-                ProgramSize += 4; 
+                ProgramSize += 4;
 
 
                 StoreMem(address, (data.size())/2, value );    //Storing into Memory Space
@@ -503,14 +469,14 @@ void Print()
             }
         }
         file.close();
-        
+       
         std::cout<< "-----------------RISC-V Simulator---------------------------"<<std::endl;
         std::cout << "ProgramSize: " << ProgramSize << "\n";
 
         if(debug)
         {
             std::cout << "\nMemory Contents:\n";
-            for (int i = 0; i < ProgramSize; i++) 
+            for (int i = 0; i < ProgramSize; i++)
             {
                 std::cout << std::hex << i << "  :" << std::hex << (int)MemorySpace[i] << std::endl;
             }
