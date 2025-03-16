@@ -232,7 +232,7 @@ void Print()
 
                                                                       
                         case 0b010: if(debug) std::cout<<"Set Less Than Immediate Detected"<<std::endl;
-                                    x[rd] = (x[rs1] < imm) ? 1 : 0; break;                                   
+                                    x[rd] = ((int32_t)x[rs1] < (int32_t)imm) ? 1 : 0; break;                                   
 
                         case 0b011: if(debug) std::cout<<"Set Less Than Unsigned Immediate Detected"<<std::endl;
                                     x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;                        
