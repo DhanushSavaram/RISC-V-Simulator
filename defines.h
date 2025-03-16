@@ -8,6 +8,9 @@
 #define U_LUI 0x37
 #define U_AUIPC 0x17
 #define ECALL 0b1110011
+#define FLW 0b0000111
+#define FSW 0b0100111
+#define FPA 0b1010011
 #define word 4
 #define halfword 2
 #define byte 1
