@@ -32,10 +32,24 @@ uint32_t imm;
 uint32_t pc;
 
 
+void PrintFloatRegs()
+{
+
+        std::cout << "Current Instruction : 0x" << std::hex << CurrentInstr << std::endl;
+
+        for (int i = 0; i < 32; i++)
+        {
+            std::cout << std::dec << "f[" << i << "] = "<< f[i] << std::endl;
+
+        }
+            std::cout << "---------------------------------------------" << std::endl;
+
+
+}
 
 
 
-void Print()
+void PrintIntRegs()
 {
     static const char* regNames[32] = {
         "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -232,7 +246,7 @@ void Print()
 
                                                                       
                         case 0b010: if(debug) std::cout<<"Set Less Than Immediate Detected"<<std::endl;
-                                    x[rd] = ((int32_t)x[rs1] < (int32_t)imm) ? 1 : 0; break;                                   
+                                    x[rd] = (x[rs1] < imm) ? 1 : 0; break;                                   
 
                         case 0b011: if(debug) std::cout<<"Set Less Than Unsigned Immediate Detected"<<std::endl;
                                     x[rd] = (uint32_t)x[rs1] < (uint32_t)imm ? 1 : 0; break;                        
@@ -266,31 +280,33 @@ void Print()
                           pc = (x[rs1] + imm) & 0xFFFFFFFE;
                           BranchTaken = true;
                           break;
-            // case ECALL  : if(debug) std::cout<<"ECALL Detected"<<std::endl; 
-            //                 switch(x[17])
-            //                 {
-            //                     case 63:   {
-            //                         int fdr = x[10]; 
-            //                         uint32_t addrr = x[11]; 
-            //                         int sizer = x[12];
-            //                         if (fdr == 0) 
-            //                         { 
-            //                             std::cin.read(&MemorySpace[addrr], sizer);
-            //                         }
-            //                         x[10] = std::cin.gcount(); 
-            //                         break;}
-            //                     case 64: {
-            //                         int fdw = x[10]; 
-            //                         uint32_t addrw = x[11]; 
-            //                         int sizew = x[12];
-            //                         if (fdw == 1) 
-            //                         { 
-            //                             std::cout.write(&MemorySpace[addrw], sizew)<<std::endl;
-            //                             std::cout.flush();
-            //                         }
-            //                         x[10] = sizew;
-            //                         break;}
-            //                     } break;
+            case ECALL  : if(debug) std::cout<<"ECALL Detected"<<std::endl; 
+                            switch(x[17])
+                            {
+                                case 63:   {
+                                    if(debug) std::cout<<"ECALL Read Detected"<<std::endl;
+                                    int fdr = x[10]; 
+                                    uint32_t addrr = x[11]; 
+                                    int sizer = x[12];
+                                    if (fdr == 0) 
+                                    { 
+                                        std::cin.read(reinterpret_cast<char*>(&MemorySpace[addrr]), sizer);
+                                    }
+                                    x[10] = std::cin.gcount(); 
+                                    break;}
+                                case 64: {
+                                    if(debug) std::cout<<"ECALL Write Detected"<<std::endl;
+                                    int fdw = x[10]; 
+                                    uint32_t addrw = x[11]; 
+                                    int sizew = x[12];
+                                    if (fdw == 1) 
+                                    { 
+                                        std::cout.write(reinterpret_cast<char*>(&MemorySpace[addrw]), sizew)<<std::endl;
+                                        std::cout.flush();
+                                    }
+                                    x[10] = sizew;
+                                    break;}
+                                } break;
 
                 
             
@@ -382,6 +398,8 @@ void Print()
                                         case 0b101: if(debug) std::cout<<"Load HalfWord Unsigned Detected"<<std::endl;
                                                     x[rd] = ReadMem(halfword, UNSIGNED, imm + x[rs1]);break; 
                                     } break;
+
+            //Floating Point Instructions
             case FLW:  switch(funct3)
                         {
                             case 0b010: if(debug) std::cout<<"FLW Detected"<<std::endl;
@@ -391,47 +409,48 @@ void Print()
             case FSW:  switch(funct3)
                         {
                             case 0b010: if(debug) std::cout<<"FSW Detected"<<std::endl;
-                                        StoreMem(f[rs1] + imm, word, f[rs2]); break;    //StoreMem(x[rs1]+imm, word, x[rs2]);   break ;  
+                                        StoreMem(x[rs1] + imm, word, f[rs2]); break;    //StoreMem(x[rs1]+imm, word, x[rs2]);   break ;  
                         } break;                        
-            case FPA: { // FP Arithmetic
-                        switch(funct3) 
+            case FPA: { 
+                        switch(funct7) 
                         {
                             case 0x00: if(debug) std::cout<<"FADD.S Detected"<<std::endl;
-                                    f[rd] = f[rs1] + f[rs2]; break;  // FADD.S
+                                       f[rd] = f[rs1] + f[rs2]; break;                              // FADD.S
 
                             case 0x04: if(debug) std::cout<<"FSUB.S Detected"<<std::endl;
-                                    f[rd] = f[rs1] - f[rs2]; break;  // FSUB.S
+                                       f[rd] = f[rs1] - f[rs2]; break;                              // FSUB.S
 
                             case 0x08: if(debug) std::cout<<"FMUL.S Detected"<<std::endl;
-                                    f[rd] = f[rs1] * f[rs2]; break;  // FMUL.S
+                                       f[rd] = f[rs1] * f[rs2]; break;                              // FMUL.S
 
                             case 0x0C: if(debug) std::cout<<"FDIV.S Detected"<<std::endl;
-                                    f[rd] = f[rs1] / f[rs2]; break;  // FDIV.S
+                                       f[rd] = f[rs1] / f[rs2]; break;                              // FDIV.S
 
                             case 0x2C: if(debug) std::cout<<"FSQRT.S Detected"<<std::endl;
-                                    f[rd] = sqrtf(f[rs1]); break;    // FSQRT.S
+                                       f[rd] = sqrtf(f[rs1]); break;                                // FSQRT.S
                             
                             case 0x50: if(debug) std::cout<<"FEQ.S Detected"<<std::endl;
-                                    x[rd] = (f[rs1] == f[rs2]); break; // FEQ.S
+                                       x[rd] = (f[rs1] == f[rs2]); break;                           // FEQ.S
 
                             case 0x51: if(debug) std::cout<<"FLT.S Detected"<<std::endl;
-                                    x[rd] = (f[rs1] < f[rs2]); break;  // FLT.S
+                                       x[rd] = (f[rs1] < f[rs2]); break;                            // FLT.S
+
                             case 0x52: if(debug) std::cout<<"FLE.S Detected"<<std::endl;
-                                    x[rd] = (f[rs1] <= f[rs2]); break; // FLE.S
+                                       x[rd] = (f[rs1] <= f[rs2]); break;                           // FLE.S
                             
                             case 0x60: if(debug) std::cout<<"FCT.W.S Detected"<<std::endl;
-                                    x[rd] = (int32_t)f[rs1]; break;   // FCVT.W.S
+                                       x[rd] = (int32_t)f[rs1]; break;                              // FCVT.W.S
 
                             case 0x61: if(debug) std::cout<<"FCVT.WU.S Detected"<<std::endl;
-                                    x[rd] = (uint32_t)f[rs1]; break;  // FCVT.WU.S
+                                       x[rd] = (uint32_t)f[rs1]; break;                             // FCVT.WU.S
 
                             case 0x68: if(debug) std::cout<<"FCVT.S.W Detected"<<std::endl;
-                                    f[rd] = (int32_t)x[rs1]; break;   // FCVT.S.W
+                                       f[rd] = (float)(int32_t)x[rs1]; break;                              // FCVT.S.W
 
                             case 0x69: if(debug) std::cout<<"FCVT.S.WU Detected"<<std::endl;
-                                    f[rd] = (uint32_t)x[rs1]; break;  // FCVT.S.WU
+                                       f[rd] = (float)x[rs1]; break;                             // FCVT.S.WU
                             
-                            case 0x10: // FSGNJ.S
+                            case 0x10:                                                              // FSGNJ.S
                                 memcpy(&f[rd], &f[rs1], sizeof(float));
                                 ((uint32_t*)&f[rd])[0] ^= 
                                     (((uint32_t*)&f[rs2])[0] & 0x80000000);
@@ -446,8 +465,16 @@ void Print()
 
     
     
-    x[0]=0;            
-    if(mode == Verbose) Print();
+    x[0]=0;
+    if(opcode == FLW || opcode == FSW || opcode == FPA)
+    {
+        if(mode == Verbose) PrintFloatRegs();
+
+    }    
+    else
+    {
+        if(mode == Verbose) PrintIntRegs();
+    }        
 
     
     }
@@ -548,7 +575,7 @@ void Print()
             if((CurrentInstr == 0) ||((CurrentInstr == 0x8067) && (x[1] == 0)))
             {
                 if(mode == !Verbose) std::cout << "Program Counter : 0x" << std::hex << pc << std::endl;
-                Print();
+                PrintIntRegs();
                 std::cout<<"------------------Simulation Ended here---------------------"<<std::endl;
                 break;
             }
