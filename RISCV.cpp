@@ -199,45 +199,88 @@ void PrintIntRegs()
         switch(opcode)
         {
             case R: 
-                    switch(funct3)
-                    {
-                        case 0b000:
-                                    switch(funct7)
-                                    {
-                                        case 0b0000000:  if(debug) std::cout<<"ADD Detected"<<std::endl;   
-                                                         x[rd] = x[rs1] + x[rs2]; break;                   
-                                        case 0b0100000:  if(debug) std::cout<<"SUB Detected"<<std::endl;
-                                                         x[rd] = x[rs1] - x[rs2]; break;                   
-                                    }
-                                    break;
+            switch(funct7) {
+                case 0b0000000:
+                    switch(funct3) {
+                        case 0b000: if(debug) std::cout<<"ADD Detected"<<std::endl;   
+                                    x[rd] = x[rs1] + x[rs2]; break;                   
                         case 0b001: if(debug) std::cout<<"Shift Left Detected"<<std::endl;
                                     x[rd] = x[rs1] << x[rs2]; break;                             
-
                         case 0b010: if(debug) std::cout<<"Shift Less Than Detected"<<std::endl;
                                     x[rd] = (x[rs1] < x[rs2]) ? 1 : 0; break;                    
-
                         case 0b011: if(debug) std::cout<<"Shift Less Than Unsigned Detected"<<std::endl;
                                     x[rd] = (uint32_t)x[rs1] < (uint32_t)x[rs2] ? 1 : 0; break;   
-
                         case 0b100: if(debug) std::cout<<"XOR Detected"<<std::endl;
                                     x[rd] = x[rs1] ^ x[rs2]; break;                               
-
-                                    switch(funct7)
-                                    {
-                                        case 0b0000000:  if(debug) std::cout<<"Shift Right Detected"<<std::endl;
-                                                         x[rd] = x[rs1] >> x[rs2]; break;             
-                                        case 0b0100000:  if(debug) std::cout<<"Shift Right Arithmetic Detected"<<std::endl;
-                                                         x[rd] = (int32_t)x[rs1] >> x[rs2]; break;         
-                                    }
-                                    break;
+                        case 0b101: if(debug) std::cout<<"Shift Right Detected"<<std::endl;
+                                    x[rd] = x[rs1] >> x[rs2]; break;             
                         case 0b110: if(debug) std::cout<<"OR Detected"<<std::endl;
                                     x[rd] = x[rs1] | x[rs2]; break;                               
                         case 0b111: if(debug) std::cout<<"AND Detected"<<std::endl;
                                     x[rd] = x[rs1] & x[rs2]; break;                           
                     }
                     break;
-            
-            case I:
+                    
+                case 0b0000001:
+                    switch(funct3) {
+                        case 0b000: if(debug) std::cout<<"MUL Detected"<<std::endl;
+                                    x[rd] = x[rs1] * x[rs2]; break;
+                        case 0b001: 
+                                    {
+                                        if(debug) std::cout<<"MUL HIGH Detected"<<std::endl;
+                                        int64_t op1 = (int32_t)x[rs1];  // Sign-extend rs1 to 64-bit
+                                        int64_t op2 = (int32_t)x[rs2];  // Sign-extend rs2 to 64-bit
+                                        x[rd] = (int64_t)((op1 * op2) >> 32); // Extract high 32 bits
+                                        break;
+                                    }
+                                                 
+                        case 0b010: {
+                                        if(debug) std::cout<<"MUL High Signed Detected"<<std::endl;
+                                        int64_t op1 = (int32_t)x[rs1];  // Sign-extend rs1 to 64-bit
+                                        int64_t op2 = (uint32_t)x[rs2];  
+                                        x[rd] = (int64_t)((op1 * op2) >> 32); // Extract high 32 bits
+                                        break;
+                                    }
+                        case 0b011: {
+                                        if(debug) std::cout<<"MUL UnSigned Detected"<<std::endl;
+                                        int64_t op1 = (uint32_t)x[rs1];  
+                                        int64_t op2 = (uint32_t)x[rs2];  
+                                        x[rd] = (int64_t)((op1 * op2) >> 32); // Extract high 32 bits
+                                        break;
+                                    } 
+                        case 0b100: 
+                                    {   if(debug) std::cout<<"DIV Detected"<<std::endl;
+                                        if (x[rs2] == 0) {  // Division by zero case
+                                            x[rd] = -1;  // Or x[rd] = 0xFFFFFFFF for RISC-V
+                                            break;
+                                        }
+                                        else if (x[rs1] == INT32_MIN && x[rs2] == -1) { // Signed division overflow
+                                            x[rd] = x[rs1];  // Returning INT32_MIN
+                                            break;
+                                        }
+                                        x[rd] = x[rs1] / x[rs2];
+                                        break;
+                                    }
+
+                        case 0b101: if(debug) std::cout<<"DIV UNSIGNED Detected"<<std::endl;
+                                    x[rd] = (x[rs2] == 0) ? -1 : ((uint32_t)x[rs1] / (uint32_t)x[rs2]);break;
+                        case 0b110: if(debug) std::cout<<"REM Detected"<<std::endl;
+                                    x[rd] = (x[rs2] == 0) ? x[rs1] : (x[rs1] % x[rs2]); break;                               
+                        case 0b111: if(debug) std::cout<<"REMU Detected"<<std::endl;
+                                    x[rd] = (x[rs2] == 0) ? x[rs1] : ((uint32_t)x[rs1] % (uint32_t)x[rs2]); break;                           
+                    }
+                    break;
+                    
+                case 0b0100000: 
+                    switch(funct3) {
+                        case 0b000: if(debug) std::cout<<"SUB Detected"<<std::endl;
+                                    x[rd] = x[rs1] - x[rs2]; break;  
+                        case 0b101: if(debug) std::cout<<"Shift Right Arithmetic Detected"<<std::endl;
+                                    x[rd] = (int32_t)x[rs1] >> x[rs2]; break; 
+                    }
+                    break;
+            }
+            break; case I:
                     switch(funct3)
                     {
 
