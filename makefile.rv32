@@ -1,0 +1,49 @@
+RISCV = /pkgs/riscv-gnu-toolchain/riscv-gnu-toolchain-elf
+CC = $(RISCV)/bin/riscv32-unknown-elf-gcc
+AS = $(RISCV)/bin/riscv32-unknown-elf-as
+LD = $(RISCV)/bin/riscv32-unknown-elf-ld
+OBJDUMP = $(RISCV)/bin/riscv32-unknown-elf-objdump
+POSTPROC = ~faustm/bin/rv32pp
+
+# Flags
+CFLAGS = -S -fpic -march=rv32i -mabi=ilp32
+
+# Get the source file and code address from the command line
+SRC = $(file)
+CODE_ADDR ?= 0x0
+
+# Define output files based on source type
+ifeq ($(suffix $(SRC)),.c)
+    ASM = $(basename $(SRC)).s
+    OBJ = $(basename $(SRC)).o
+    MEM = $(basename $(SRC)).mem
+else ifeq ($(suffix $(SRC)),.s)
+    ASM = $(SRC)
+    OBJ = $(basename $(SRC)).o
+    MEM = $(basename $(SRC)).mem
+endif
+
+# Default target
+all: $(MEM)
+
+# If the source is a C file, compile to assembly
+$(ASM): $(SRC)
+	$(CC) $(CFLAGS) $< -o $@
+
+# Assemble the assembly file
+$(OBJ): $(ASM)
+	$(AS) $< -o $@
+
+# Link the object file (set starting address to CODE_ADDR)
+linked.out: $(OBJ)
+	$(LD) -Ttext $(CODE_ADDR) $< -o $@
+
+# Generate memory file using post-processing
+$(MEM): linked.out
+	$(OBJDUMP) -d linked.out | $(POSTPROC) > $@
+
+# Clean up
+clean:
+	rm -f *.s *.o *.mem linked.out
+
+.PHONY: all clean
