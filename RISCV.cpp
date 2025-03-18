@@ -250,22 +250,30 @@ void PrintIntRegs()
                                     } 
                         case 0b100: 
                                     {   if(debug) std::cout<<"DIV Detected"<<std::endl;
-                                        if (x[rs2] == 0) {  // Division by zero case
-                                            x[rd] = -1;  // Or x[rd] = 0xFFFFFFFF for RISC-V
-                                            break;
+                                        if (x[rs2] == 0) {  
+                                            x[rd] = -1;  
+                                        } else if (x[rs1] == INT32_MIN && x[rs2] == -1) {  
+                                            x[rd] = x[rs1];
+                                        } else {  
+                                            // Normal division case
+                                            x[rd] = (int32_t)x[rs1] / (int32_t)x[rs2];
                                         }
-                                        else if (x[rs1] == INT32_MIN && x[rs2] == -1) { // Signed division overflow
-                                            x[rd] = x[rs1];  // Returning INT32_MIN
-                                            break;
-                                        }
-                                        x[rd] = x[rs1] / x[rs2];
                                         break;
                                     }
 
                         case 0b101: if(debug) std::cout<<"DIV UNSIGNED Detected"<<std::endl;
                                     x[rd] = (x[rs2] == 0) ? -1 : ((uint32_t)x[rs1] / (uint32_t)x[rs2]);break;
-                        case 0b110: if(debug) std::cout<<"REM Detected"<<std::endl;
-                                    x[rd] = (x[rs2] == 0) ? x[rs1] : (x[rs1] % x[rs2]); break;                               
+                        case 0b110: {   if(debug) std::cout<<"REM Detected"<<std::endl;
+                                        if (x[rs2] == 0) {  
+                                            x[rd] = -1;  
+                                        } else if (x[rs1] == INT32_MIN && x[rs2] == -1) {  
+                                            x[rd] = x[rs1];
+                                        } else {  
+                                            // Normal division case
+                                            x[rd] = (int32_t)x[rs1] % (int32_t)x[rs2];
+                                        }
+                                        break;
+                                    }                             
                         case 0b111: if(debug) std::cout<<"REMU Detected"<<std::endl;
                                     x[rd] = (x[rs2] == 0) ? x[rs1] : ((uint32_t)x[rs1] % (uint32_t)x[rs2]); break;                           
                     }
